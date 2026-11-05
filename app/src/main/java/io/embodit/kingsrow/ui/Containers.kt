@@ -17,6 +17,8 @@ enum class Page(val stateId: String) { PLAY("S03"), NEW("S02"), RULES("S12"), SE
 object Ui {
     var page by mutableStateOf(Page.RULES)
     var exitConfirm by mutableStateOf(false)
+    /** New-game [开始] while a game is in progress asks first (D44). */
+    var newConfirm by mutableStateOf(false)
     /** The user opened the current page from the TabBar (the game then leaves it alone). */
     var pickedByUser = false
 }

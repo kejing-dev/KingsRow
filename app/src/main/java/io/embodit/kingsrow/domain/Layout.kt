@@ -47,12 +47,14 @@ object Layout {
     const val SPARE_Z = 0.065f
     const val STACK_MAX = 4
 
-    const val SEAT_W = 0.18f
-    const val SEAT_H = 0.035f
+    // v0.1.1: the system places the volume about 2.1 m away (emulator default, see emulatorEyes), so the cards are
+    // sized for that distance (D44): 6 cm tall seat card, 3.2 cm tray cards.
+    const val SEAT_W = 0.30f
+    const val SEAT_H = 0.06f
     const val SEAT_GAP_UP = 0.04f
     const val SEAT_GAP_BACK = 0.04f
-    const val TRAY_CARD_W = 0.06f
-    const val TRAY_CARD_H = 0.02f
+    const val TRAY_CARD_W = 0.10f
+    const val TRAY_CARD_H = 0.032f
 
     /** Near bottom edge of the board, the tilt pivot (scene). */
     val PIVOT = V3(0f, 0f, HALF)
@@ -125,7 +127,22 @@ object Layout {
             val a = deg * PI.toFloat() / 180f
             out += "$pose${if (deg == 0) "" else if (deg < 0) "L30" else "R30"}" to V3(0.85f * sin(a), h, 0.85f * cos(a))
         }
+        out += emulatorEyes()
         return out
+    }
+
+    /**
+     * Where the emulator's default camera actually sees the volume from (D44: design eyes are only a lower bound).
+     * Measured on first-screen.png (emulator-5560, v0.1.0): near edge 290 px wide, far edge 232 px -> near edge about
+     * 2.1 m away; the 20° board shows 0.24 m of apparent height -> the line of sight drops about 6° -> eye about
+     * 0.25 m above the volume floor. Plus the same point turned ±30° around the volume.
+     */
+    fun emulatorEyes(): List<Pair<String, V3>> {
+        val d = HALF + 2.1f
+        return listOf(0, -30, 30).map { deg ->
+            val a = deg * PI.toFloat() / 180f
+            "emu${if (deg == 0) "" else if (deg < 0) "L30" else "R30"}" to V3(d * sin(a), 0.25f, d * cos(a))
+        }
     }
 
     data class Box(val min: V3, val max: V3, val local: Boolean)

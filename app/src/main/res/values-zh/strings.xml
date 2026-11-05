@@ -117,10 +117,21 @@
     <string name="settings_coach">首局引导</string>
     <string name="settings_coach_again">重新打开</string>
     <string name="settings_recall">叫回面前</string>
-    <string name="settings_recall_hint">面板先收起，你平视前方后它在正前方重新打开。</string>
+    <string name="settings_recall_hint">面板会先关掉，再在你正前方打开。棋盘上的小牌看不清，就用棋台下方的系统把手把棋台拖近。</string>
     <string name="settings_about">关于</string>
     <string name="settings_about_text">西洋跳棋 %1$s · 规则是公有领域 · Noto Sans（SIL OFL 1.1）· PICO 图标 · 全离线，不用账号。</string>
     <string name="settings_exit">退出应用</string>
     <string name="confirm_exit">退出西洋跳棋？这盘已经存好了。</string>
     <string name="confirm_yes_exit">退出</string>
+    <string name="on">开</string>
+    <string name="off">关</string>
+    <string name="confirm_new_q">这盘还没下完。开新局，这盘就没了。</string>
+    <string name="btn_new_anyway">开新局</string>
+    <string name="seat_must_jump">这步必须吃</string>
+    <string name="seat_illegal">那儿走不了</string>
+    <string name="seat_not_yours">那是它的子</string>
+    <string name="seat_no_drag">首局先点着走</string>
+    <string name="seat_busy">等这步走完</string>
+    <string name="status_no_drag">首局先点着走：捏一颗子，再捏亮着的格。拖子下一盘就能用。</string>
+    <string name="status_busy">等这步走完再点。</string>
 </resources>

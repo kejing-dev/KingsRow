@@ -124,10 +124,21 @@
     <string name="settings_coach">Guided first game</string>
     <string name="settings_coach_again">Turn on again</string>
     <string name="settings_recall">Bring panel here</string>
-    <string name="settings_recall_hint">The panel closes, then opens in front of you once you look straight ahead.</string>
+    <string name="settings_recall_hint">The panel closes, then opens again in front of you. Board cards too small? Drag the board closer with the handle under it.</string>
     <string name="settings_about">About</string>
     <string name="settings_about_text">Kings Row %1$s · rules are public domain · Noto Sans (SIL OFL 1.1) · PICO icons · works offline, no account.</string>
     <string name="settings_exit">Quit</string>
     <string name="confirm_exit">Quit Kings Row? Your game is saved.</string>
     <string name="confirm_yes_exit">Quit</string>
+    <string name="on">On</string>
+    <string name="off">Off</string>
+    <string name="confirm_new_q">A game is in progress. Start a new one and this game is gone.</string>
+    <string name="btn_new_anyway">New game</string>
+    <string name="seat_must_jump">You have to jump</string>
+    <string name="seat_illegal">Can\'t go there</string>
+    <string name="seat_not_yours">That\'s its piece</string>
+    <string name="seat_no_drag">First game: pinch, don\'t drag</string>
+    <string name="seat_busy">Wait for this move</string>
+    <string name="status_no_drag">First game: pinch a piece, then pinch a lit square. Dragging opens up from your next game.</string>
+    <string name="status_busy">Wait for this move to finish.</string>
 </resources>

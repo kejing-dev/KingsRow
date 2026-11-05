@@ -235,6 +235,8 @@ class GameFlow(
         when (st.phase) {
             Phase.IDLE, Phase.SELECTED -> tapIdle(sq)
             Phase.CHAIN -> if (sq in st.jumpTargets) step(sq) else log("TAP ${Sq.name(sq)} ignored in chain")
+            // not silent (D44「点了没反应是阻断」): while a move plays or the AI thinks, say so
+            Phase.ANIMATING, Phase.THINKING, Phase.CROWNING -> { alert(AlertKind.BUSY, sq, emptySet()); log("TAP ${Sq.name(sq)} busy phase=${st.phase.stateId}") }
             else -> log("TAP ${Sq.name(sq)} ignored phase=${st.phase.stateId}")
         }
     }
@@ -256,7 +258,7 @@ class GameFlow(
             val from = turnMoves.filter { it.from == sq }
             if (from.isEmpty()) {
                 val jumpers = turnMoves.filter { it.isCapture }.map { it.from }.toSet()
-                val kind = if (jumpers.isNotEmpty() && Rules.canMoveIgnoringForce(st.snap.pos, sq)) AlertKind.MUST_JUMP else if (jumpers.isNotEmpty()) AlertKind.MUST_JUMP else AlertKind.STUCK
+                val kind = if (jumpers.isNotEmpty()) AlertKind.MUST_JUMP else AlertKind.STUCK
                 alert(kind, sq, if (kind == AlertKind.MUST_JUMP) jumpers else emptySet())
                 deselect()
                 log("ALERT ${kind.name} at ${Sq.name(sq)} jumpers=${jumpers.joinToString { Sq.name(it) }} S08")
@@ -300,7 +302,12 @@ class GameFlow(
 
     /** Drag start on a piece: selects it like a tap (no drag in the first-game coaching). */
     fun dragStart(sq: Int): Boolean {
-        if (s.coachTurns > 0) { log("DRAG off during coaching"); return false }
+        if (s.coachTurns > 0) {
+            // first game: taps only (design input.drag); a drag gets a sentence instead of nothing
+            if (s.humansTurn && s.phase in setOf(Phase.IDLE, Phase.SELECTED)) alert(AlertKind.NO_DRAG, sq, emptySet())
+            log("DRAG off during coaching")
+            return false
+        }
         if (s.phase !in setOf(Phase.IDLE, Phase.SELECTED) || !s.humansTurn) return false
         if (s.selected != sq) tapIdle(sq)
         return s.selected == sq

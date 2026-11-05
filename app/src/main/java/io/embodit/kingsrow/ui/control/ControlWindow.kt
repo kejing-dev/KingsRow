@@ -43,7 +43,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pico.spatial.ui.design.CircularProgressIndicator
 import com.pico.spatial.ui.design.Icon
 import com.pico.spatial.ui.design.PicoTheme
-import com.pico.spatial.ui.design.Switch
 import com.pico.spatial.ui.design.windows.TabBar
 import com.pico.spatial.ui.platform.ViewPoint
 import com.pico.spatial.ui.platform.containers.LocalSpatialNavigator
@@ -95,7 +94,12 @@ fun ControlWindow() {
             else -> Unit
         }
     }
-    LaunchedEffect(Ui.page) { Log.i(TAG, "PAGE ${Ui.page} ${Ui.page.stateId}") }
+    LaunchedEffect(Ui.page) {
+        // an open confirmation belongs to the page it was opened on (critic suggestion 1)
+        Ui.exitConfirm = false
+        Ui.newConfirm = false
+        Log.i(TAG, "PAGE ${Ui.page} ${Ui.page.stateId}")
+    }
 
     Box(Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 20.dp)) {
         when (Ui.page) {
@@ -213,6 +217,8 @@ private fun StatusLine(state: PlayState) {
         alert != null && alert.kind == AlertKind.STUCK -> stringResource(R.string.status_stuck)
         alert != null && alert.kind == AlertKind.ILLEGAL -> stringResource(R.string.status_illegal)
         alert != null && alert.kind == AlertKind.NOT_YOURS -> stringResource(R.string.status_not_yours)
+        alert != null && alert.kind == AlertKind.NO_DRAG -> stringResource(R.string.status_no_drag)
+        alert != null && alert.kind == AlertKind.BUSY -> stringResource(if (state.phase == Phase.THINKING) R.string.seat_thinking else R.string.status_busy)
         state.result != null -> ""
         state.restoredUntil != null -> stringResource(R.string.restored)
         state.phase == Phase.CROWNING -> stringResource(if (state.crown?.side == cfg.human) R.string.status_crown_you else R.string.status_crown_ai)
@@ -226,7 +232,7 @@ private fun StatusLine(state: PlayState) {
         state.humansTurn -> stringResource(R.string.status_your_move)
         else -> ""
     }
-    val color = if (alert != null) KingsColors.ErrorText else PicoTheme.colorScheme.labelPrimary
+    val color = if (alert != null && alert.kind != AlertKind.BUSY) KingsColors.ErrorText else PicoTheme.colorScheme.labelPrimary
     Row(Modifier.fillMaxWidth().height(64.dp), verticalAlignment = Alignment.CenterVertically) {
         if (state.phase == Phase.THINKING) {
             CircularProgressIndicator(modifier = Modifier.size(28.dp))
@@ -285,25 +291,40 @@ private fun ResultBlock(state: PlayState, graph: Graph) {
 @Composable
 private fun NewPage(state: PlayState, settings: Settings, graph: Graph) {
     val inGame = state.config != null && state.result == null
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        PageTitle(stringResource(R.string.new_title), "new")
-        if (inGame) {
-            SecondaryButton(stringResource(R.string.btn_continue), "new/continue", icon = R.drawable.ic_history, onClick = {
-                if (state.phase == Phase.SETUP) graph.flow.continueSaved()
-                Ui.page = Page.PLAY
+    fun start() { graph.flow.newGame(settings.side, settings.level); Ui.newConfirm = false; Ui.page = Page.PLAY }
+    Column(Modifier.fillMaxSize()) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            PageTitle(stringResource(R.string.new_title), "new")
+            if (inGame) {
+                SecondaryButton(stringResource(R.string.btn_continue), "new/continue", icon = R.drawable.ic_history, onClick = {
+                    if (state.phase == Phase.SETUP) graph.flow.continueSaved()
+                    Ui.newConfirm = false
+                    Ui.page = Page.PLAY
+                }, modifier = Modifier.fillMaxWidth())
+            }
+            OptionRow(stringResource(R.string.new_side), "new/side", labelWidth = 72.dp) {
+                Segments(
+                    listOf(SidePick.BLACK to stringResource(R.string.new_side_black), SidePick.RED to stringResource(R.string.new_side_red), SidePick.RANDOM to stringResource(R.string.new_side_random)),
+                    settings.side, "new/side", { s -> graph.settings.update { it.copy(side = s) } }, Modifier.weight(1f),
+                )
+            }
+            Txt(stringResource(R.string.new_level), "new/level", style = PicoTheme.typography.labelLarge, modifier = Modifier.padding(top = 2.dp))
+            for (l in 1..5) ChoiceRow(levelName(l), levelSub(l), "new/level$l", settings.level == l) { graph.settings.update { it.copy(level = l) } }
+        }
+        // [开始] is pinned to the bottom (D44 首屏); with a game in progress it asks first (D44 丢进度入口)
+        Spacer(Modifier.height(8.dp))
+        if (Ui.newConfirm) {
+            Txt(stringResource(R.string.confirm_new_q), "new/confirm-q", style = PicoTheme.typography.titleMedium, maxLines = 2)
+            Spacer(Modifier.height(6.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SecondaryButton(stringResource(R.string.btn_cancel), "new/confirm-cancel", onClick = { Ui.newConfirm = false }, modifier = Modifier.weight(1f))
+                SecondaryButton(stringResource(R.string.btn_new_anyway), "new/confirm-yes", danger = true, onClick = { start() }, modifier = Modifier.weight(1f))
+            }
+        } else {
+            PrimaryButton(stringResource(R.string.btn_start), "new/start", onClick = {
+                if (inGame) { Ui.newConfirm = true; Log.i(TAG, "CONFIRM NEW S13") } else start()
             }, modifier = Modifier.fillMaxWidth())
         }
-        OptionRow(stringResource(R.string.new_side), "new/side", labelWidth = 72.dp) {
-            Segments(
-                listOf(SidePick.BLACK to stringResource(R.string.new_side_black), SidePick.RED to stringResource(R.string.new_side_red), SidePick.RANDOM to stringResource(R.string.new_side_random)),
-                settings.side, "new/side", { s -> graph.settings.update { it.copy(side = s) } }, Modifier.weight(1f),
-            )
-        }
-        Txt(stringResource(R.string.new_level), "new/level", style = PicoTheme.typography.labelLarge, modifier = Modifier.padding(top = 4.dp))
-        for (l in 1..5) ChoiceRow(levelName(l), levelSub(l), "new/level$l", settings.level == l) { graph.settings.update { it.copy(level = l) } }
-        Spacer(Modifier.height(6.dp))
-        PrimaryButton(stringResource(R.string.btn_start), "new/start", onClick = { graph.flow.newGame(settings.side, settings.level); Ui.page = Page.PLAY }, modifier = Modifier.fillMaxWidth())
-        Txt(stringResource(R.string.new_note), "new/note", style = PicoTheme.typography.bodySmall, color = PicoTheme.colorScheme.labelSecondary, maxLines = 2)
     }
 }
 
@@ -312,15 +333,15 @@ private fun NewPage(state: PlayState, settings: Settings, graph: Graph) {
 @Composable
 private fun RulesPage(state: PlayState, graph: Graph) {
     Column(Modifier.fillMaxSize()) {
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // every line fits the 640 dp window without scrolling (D44 首屏); the scroll stays only as a safety net
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             PageTitle(stringResource(if (state.phase == Phase.WELCOME) R.string.welcome_title else R.string.rules_title), "rules")
             RulesDiagram()
-            listOf(R.string.rules_1, R.string.rules_2, R.string.rules_3, R.string.rules_4).forEach { Txt(stringResource(it), "rules/line", maxLines = 4) }
-            Spacer(Modifier.height(4.dp))
-            Txt(stringResource(R.string.rules_mistakes), "rules/mistakes", style = PicoTheme.typography.titleMedium)
-            listOf(R.string.mistake_1, R.string.mistake_2, R.string.mistake_3, R.string.mistake_4).forEach { Txt("· " + stringResource(it), "rules/mistake", style = PicoTheme.typography.bodyMedium, maxLines = 4) }
-            Spacer(Modifier.height(4.dp))
-            Txt(stringResource(R.string.source_line), "rules/source", style = PicoTheme.typography.bodySmall, color = PicoTheme.colorScheme.labelSecondary, maxLines = 3)
+            listOf(R.string.rules_1, R.string.rules_2, R.string.rules_3, R.string.rules_4).forEach { Txt(stringResource(it), "rules/line", style = PicoTheme.typography.bodyMedium, maxLines = 3) }
+            Spacer(Modifier.height(2.dp))
+            Txt(stringResource(R.string.rules_mistakes), "rules/mistakes", style = PicoTheme.typography.titleSmall)
+            listOf(R.string.mistake_1, R.string.mistake_2, R.string.mistake_3, R.string.mistake_4).forEach { Txt("· " + stringResource(it), "rules/mistake", style = PicoTheme.typography.bodyMedium, maxLines = 3) }
+            Txt(stringResource(R.string.source_line), "rules/source", style = PicoTheme.typography.bodySmall, color = PicoTheme.colorScheme.labelSecondary, maxLines = 2)
         }
         if (state.phase == Phase.WELCOME) {
             Spacer(Modifier.height(10.dp))
@@ -336,7 +357,7 @@ private fun RulesDiagram() {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         for (i in 0 until 4) {
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Canvas(Modifier.size(100.dp)) { diagramCell(i) }
+                Canvas(Modifier.size(76.dp)) { diagramCell(i) }
                 Txt(labels[i], "rules/diagram$i", style = PicoTheme.typography.labelMedium, maxLines = 1)
             }
         }
@@ -383,36 +404,34 @@ private fun SettingsPage(settings: Settings, graph: Graph) {
     val context = LocalContext.current
     val navigator = LocalSpatialNavigator.current
     fun upd(change: (Settings) -> Settings) { graph.settings.update(change); graph.flow.settingsChanged() }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    val onOff = listOf(true to stringResource(R.string.on), false to stringResource(R.string.off))
+    // every row fits the 640 dp window; [叫回面前] and [退出应用] are on the first screen (D44)
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         PageTitle(stringResource(R.string.settings_title), "settings")
         OptionRow(stringResource(R.string.settings_language), "settings/lang") {
             Segments(listOf(Language.SYSTEM to stringResource(R.string.lang_system), Language.ZH to stringResource(R.string.lang_zh), Language.EN to stringResource(R.string.lang_en)), settings.language, "settings/lang", { l -> upd { it.copy(language = l) } }, Modifier.weight(1f))
         }
+        // on / off as a 52 dp two-part control (a bare Switch is ~24 dp, B19)
         OptionRow(stringResource(R.string.settings_sound), "settings/sound") {
-            Spacer(Modifier.weight(1f))
-            Switch(checked = settings.sound, onCheckedChange = { v -> upd { it.copy(sound = v) } })
+            Segments(onOff, settings.sound, "settings/sound", { v -> upd { it.copy(sound = v) } }, Modifier.weight(1f))
         }
         OptionRow(stringResource(R.string.settings_volume), "settings/volume") {
-            Segments(listOf(0 to stringResource(R.string.volume_low), 1 to stringResource(R.string.volume_mid), 2 to stringResource(R.string.volume_high)), settings.volume, "settings/volume", { v -> upd { it.copy(volume = v) } }, Modifier.weight(1f))
+            VolumeSlider(settings.volume, onChange = { v -> upd { it.copy(volume = v) } }, modifier = Modifier.weight(1f))
         }
         OptionRow(stringResource(R.string.settings_reduced), "settings/reduced") {
-            Spacer(Modifier.weight(1f))
-            Switch(checked = settings.reducedMotion, onCheckedChange = { v -> upd { it.copy(reducedMotion = v) } })
+            Segments(onOff, settings.reducedMotion, "settings/reduced", { v -> upd { it.copy(reducedMotion = v) } }, Modifier.weight(1f))
         }
         OptionRow(stringResource(R.string.settings_coach), "settings/coach") {
-            Spacer(Modifier.weight(1f))
             SecondaryButton(stringResource(R.string.settings_coach_again), "settings/coach-again", onClick = {
                 upd { it.copy(coachDone = false) }
                 Ui.page = Page.RULES
-            })
+            }, modifier = Modifier.weight(1f))
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(4.dp))
         SecondaryButton(stringResource(R.string.settings_recall), "settings/recall", icon = R.drawable.ic_recall, onClick = { graph.window.recall() }, modifier = Modifier.fillMaxWidth())
         Txt(stringResource(R.string.settings_recall_hint), "settings/recall-hint", style = PicoTheme.typography.bodySmall, color = PicoTheme.colorScheme.labelSecondary, maxLines = 2)
-        Spacer(Modifier.height(6.dp))
-        Txt(stringResource(R.string.settings_about), "settings/about", style = PicoTheme.typography.titleMedium)
-        Txt(stringResource(R.string.settings_about_text, BuildConfig.VERSION_NAME), "settings/about-text", style = PicoTheme.typography.bodySmall, color = PicoTheme.colorScheme.labelSecondary, maxLines = 4)
-        Spacer(Modifier.height(14.dp))
+        Txt(stringResource(R.string.settings_about_text, BuildConfig.VERSION_NAME), "settings/about-text", style = PicoTheme.typography.bodySmall, color = PicoTheme.colorScheme.labelSecondary, maxLines = 2)
+        Spacer(Modifier.weight(1f))
         // D26: quit is the last row; the confirmation opens right here (no second panel).
         if (!Ui.exitConfirm) {
             SecondaryButton(stringResource(R.string.settings_exit), "settings/exit", icon = R.drawable.ic_exit, onClick = { Ui.exitConfirm = true; Log.i(TAG, "CONFIRM EXIT S13") }, modifier = Modifier.fillMaxWidth(), danger = true)
@@ -423,15 +442,16 @@ private fun SettingsPage(settings: Settings, graph: Graph) {
                 SecondaryButton(stringResource(R.string.confirm_yes_exit), "settings/exit-yes", onClick = { exitApp(context, navigator, graph) }, modifier = Modifier.weight(1f), danger = true)
             }
         }
-        Spacer(Modifier.height(12.dp))
     }
 }
 
-/** D26 exit: release, close the windows, remove every task, then end the process. */
+/** D26 / D44 exit: release, close both window containers (control window + board volume), remove every task, end. */
 internal fun exitApp(context: Context, navigator: SpatialNavigator, graph: Graph) {
-    Log.i(TAG, "EXIT release + close + finishAndRemoveTask + exitProcess")
-    runCatching { graph.flow.onBackground(); graph.sounds.release(); graph.window.detach() }
+    Log.i(TAG, "EXIT release + close all + finishAndRemoveTask + exitProcess")
+    runCatching { graph.flow.onBackground(); graph.sounds.release() }
+    runCatching { graph.window.closeAll() }
     runCatching { navigator.closeWindowContainer(Containers.CONTROL, Containers.CONTROL_TAG) }
+    runCatching { graph.window.detach() }
     runCatching {
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         am.appTasks.forEach { runCatching { it.finishAndRemoveTask() } }

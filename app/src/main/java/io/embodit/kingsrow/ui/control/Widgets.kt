@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -30,6 +31,7 @@ import com.pico.spatial.ui.design.Icon
 import com.pico.spatial.ui.design.PicoTheme
 import com.pico.spatial.ui.design.SegmentControl
 import com.pico.spatial.ui.design.SegmentItem
+import com.pico.spatial.ui.design.Slider
 import com.pico.spatial.ui.design.Text
 import io.embodit.kingsrow.domain.Side
 import io.embodit.kingsrow.platform.TAG
@@ -123,12 +125,13 @@ internal fun OptionRow(label: String, tag: String, labelWidth: Dp = 156.dp, cont
 
 @Composable
 internal fun <T> Segments(options: List<Pair<T, String>>, selected: T, tag: String, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
-    SegmentControl(modifier = modifier) {
+    // B19 / D44: the control itself is >= 48 dp tall (the component default is Small 40 dp).
+    SegmentControl(modifier = modifier.height(52.dp)) {
         options.forEach { (value, label) ->
             SegmentItem(
                 selected = value == selected,
                 onClick = { onSelect(value) },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).fillMaxHeight(),
                 title = {
                     // design-style: inherited-content-color SegmentItem
                     Txt(label, "$tag/segment", style = PicoTheme.typography.labelLarge, color = PicoTheme.colorScheme.labelPrimary)
@@ -170,4 +173,22 @@ internal fun SideDot(side: Int, size: Dp = 20.dp) {
 @Composable
 internal fun Section(content: @Composable () -> Unit) {
     Column { content() }
+}
+
+/** Volume percent of each snap stop (Settings.volume 0..2); SoundPlayer uses the same numbers. */
+internal val VOLUME_PERCENT = intArrayOf(35, 65, 100)
+
+/** A draggable slider that snaps to three stops (低 / 中 / 高) and shows the percentage (B20). */
+@Composable
+internal fun VolumeSlider(level: Int, onChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Slider(
+            value = level.toFloat(),
+            onValueChange = { v -> val snapped = kotlin.math.round(v).toInt().coerceIn(0, 2); if (snapped != level) onChange(snapped) },
+            modifier = Modifier.weight(1f).height(48.dp),
+            valueRange = 0f..2f,
+        )
+        Box(Modifier.width(12.dp))
+        Txt("${VOLUME_PERCENT[level.coerceIn(0, 2)]}%", "settings/volume-pct", style = PicoTheme.typography.labelLarge, modifier = Modifier.width(56.dp))
+    }
 }

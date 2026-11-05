@@ -34,6 +34,9 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pico.spatial.core.ecs.SceneUpdateContext
 import com.pico.spatial.core.ecs.System
@@ -53,6 +56,7 @@ import com.pico.spatial.ui.platform.LengthUnit
 import com.pico.spatial.ui.platform.LocalPhysicalLengthConverter
 import com.pico.spatial.ui.platform.containers.LocalSpatialNavigator
 import io.embodit.kingsrow.R
+import io.embodit.kingsrow.domain.AlertKind
 import io.embodit.kingsrow.domain.Layout
 import io.embodit.kingsrow.domain.Phase
 import io.embodit.kingsrow.domain.PlayState
@@ -101,10 +105,26 @@ fun BoardScreen() {
     var viewSize by remember { mutableStateOf(IntSize.Zero) }
     fun pxToM(px: Float): Float = with(converter) { converter.dpToLength(px.toDp(), LengthUnit.Meters) }
 
+    // Background / foreground (design container.lifecycle): stop the AI search and settle the move in flight when
+    // the board volume stops; restart the AI turn when it comes back. Every move is on disk already.
+    val owner = LocalLifecycleOwner.current
+    DisposableEffect(owner) {
+        val obs = LifecycleEventObserver { _, e ->
+            when (e) {
+                Lifecycle.Event.ON_STOP -> graph.flow.onBackground()
+                Lifecycle.Event.ON_START -> graph.flow.onForeground()
+                else -> Unit
+            }
+        }
+        owner.lifecycle.addObserver(obs)
+        onDispose { owner.lifecycle.removeObserver(obs) }
+    }
+
     DisposableEffect(navigator) {
         graph.window.attach(
             open = { navigator.openWindowContainer(Containers.CONTROL, Containers.CONTROL_TAG) },
             close = { navigator.closeWindowContainer(Containers.CONTROL, Containers.CONTROL_TAG) },
+            closeBoard = { navigator.closeWindowContainer() },
         )
         graph.window.request("start")
         onDispose {
@@ -132,8 +152,9 @@ fun BoardScreen() {
                 detectSpatialTapGesture(context, TargetEntity.any()) { tap ->
                     val name = tap.targetEntity?.getName()
                     Log.i(TAG, "TAP target=$name kind=${tap.interactionKind}")
-                    // S10: with the control window closed, a pinch anywhere on the board brings it back
-                    if (graph.window.closed) { graph.window.request("pinch"); return@detectSpatialTapGesture }
+                    // S10: with the control window closed, a pinch anywhere on the board brings it back in front;
+                    // the same pinch still counts on the board (critic suggestion 3)
+                    if (graph.window.closed) graph.window.reopen("pinch")
                     val sq = scene.squareOf(name)
                     if (sq != null) graph.flow.tap(sq) else graph.flow.tapNothing()
                 }
@@ -212,7 +233,17 @@ private fun SeatCard(state: PlayState, graph: Graph, w: Dp, h: Dp) {
 @Composable
 internal fun seatText(state: PlayState): String {
     val cfg = state.config
+    val alert = state.alert
     return when {
+        // feedback next to the action (D45): the control window sits to the side, so the reason is on the board too
+        alert != null -> stringResource(when (alert.kind) {
+            AlertKind.MUST_JUMP -> R.string.seat_must_jump
+            AlertKind.STUCK -> R.string.status_stuck
+            AlertKind.ILLEGAL -> R.string.seat_illegal
+            AlertKind.NOT_YOURS -> R.string.seat_not_yours
+            AlertKind.NO_DRAG -> R.string.seat_no_drag
+            AlertKind.BUSY -> if (state.phase == Phase.THINKING) R.string.seat_thinking else R.string.seat_busy
+        })
         state.restoredUntil != null && state.phase != Phase.RESULT -> stringResource(R.string.restored)
         cfg == null || state.phase in setOf(Phase.LOADING, Phase.WELCOME, Phase.SETUP) -> stringResource(R.string.seat_setup)
         state.result != null -> stringResource(
@@ -226,8 +257,8 @@ internal fun seatText(state: PlayState): String {
         state.phase == Phase.CHAIN -> stringResource(R.string.seat_chain)
         state.phase == Phase.THINKING -> stringResource(R.string.seat_thinking)
         state.phase == Phase.ANIMATING -> stringResource(if (state.anim?.side == cfg.human) R.string.status_moving else R.string.status_ai_moving)
-        state.toMove == cfg.human -> stringResource(R.string.seat_your_move, stringResource(if (cfg.human == Side.BLACK) R.string.color_black else R.string.color_red))
-        else -> stringResource(R.string.seat_thinking)
+        state.phase in setOf(Phase.IDLE, Phase.SELECTED) && state.toMove == cfg.human -> stringResource(R.string.seat_your_move, stringResource(if (cfg.human == Side.BLACK) R.string.color_black else R.string.color_red))
+        else -> ""
     }
 }
 

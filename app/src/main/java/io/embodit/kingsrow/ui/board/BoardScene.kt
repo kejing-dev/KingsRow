@@ -479,7 +479,7 @@ internal class BoardScene {
         val al = st.alert
         val at = al?.let { now - it.at } ?: Long.MAX_VALUE
         redFrame?.let { f ->
-            if (al != null && at < 600 && (at / 150) % 2 == 0L) { place(f, Layout.square(al.square, 0.002f)); f.enabled = true } else f.enabled = false
+            if (al != null && al.kind != io.embodit.kingsrow.domain.AlertKind.BUSY && al.kind != io.embodit.kingsrow.domain.AlertKind.NO_DRAG && at < 600 && (at / 150) % 2 == 0L) { place(f, Layout.square(al.square, 0.002f)); f.enabled = true } else f.enabled = false
         }
         val pulseList = if (al != null && at < 1400) al.pulse.toList() else emptyList()
         pulses.forEachIndexed { i, p ->

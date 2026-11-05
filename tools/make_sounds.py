@@ -4,7 +4,8 @@
   python tools/make_sounds.py --check    prints peak / loudness / spectrum of every file
 
 Kings Row (design sound.list): wooden discs on a wooden board, soft-attack and low-passed, no
-electronic beeps and no ambient bed. Peaks -11 ... -16 dBFS (design assets).
+electronic beeps and no ambient bed. v0.1.1 (B20 / critic block 5): peaks -1 ... -3 dBFS with a gentle tanh drive so the short wood sounds carry in a
+headset (RMS of a 30 s game, tools/loudness.py, >= -20 dBFS). The SoundPlayer top volume step stays 1.0.
 """
 import math
 import os
@@ -127,9 +128,12 @@ def note(freq, seconds, decay, partials=((1, 1.0), (2, 0.22), (3, 0.07)), attack
     return lowpass(fade_tail(x * attack_env(len(t), attack), seconds * 0.4), 3200, passes=1)
 
 
-def write(name, x, peak_db):
+def write(name, x, peak_db, drive=2.2):
     x = biquad(np.asarray(x, dtype=float), 'high', 45)   # no DC, no rumble
     x = fade_tail(x)
+    x = x / max(1e-9, np.abs(x).max())
+    if drive > 0:
+        x = np.tanh(drive * x) / math.tanh(drive)   # soft saturation: more body, same peak
     x = x * (10 ** (peak_db / 20) / max(1e-9, np.abs(x).max()))
     os.makedirs(OUT, exist_ok=True)
     with wave.open(os.path.join(OUT, name + '.wav'), 'wb') as w:
@@ -159,7 +163,7 @@ if '--check' in sys.argv:
 
 
 # select: a very light tick of a fingertip on a disc
-write('select', lowpass(0.8 * mode(1250, 0.008, 0.05) + 0.3 * mode(2300, 0.004, 0.05), 3000, 1), -16)
+write('select', lowpass(0.8 * mode(1250, 0.008, 0.05) + 0.3 * mode(2300, 0.004, 0.05), 3000, 1), -3)
 
 # slide: a disc pushed one square over the board (felt-free wood scrape + a soft set-down), three variants
 for v, seed in ((1, 21), (2, 22), (3, 23)):
@@ -167,7 +171,7 @@ for v, seed in ((1, 21), (2, 22), (3, 23)):
     x = silence(0.26)
     x = place(x, 0.5 * swish(0.18, 380 + 40 * v, 900 + 60 * v, r, attack=0.04), 0.0)
     x = place(x, knock(0.8, 0.35, r, seconds=0.07), 0.17)
-    write('slide' if v == 1 else f'slide_{v}', x, -14)
+    write('slide' if v == 1 else f'slide_{v}', x, -1)
 
 # jump: the hop over the enemy piece, a hollow "dong" of wood on wood, three variants
 for v, seed in ((1, 31), (2, 32), (3, 33)):
@@ -175,30 +179,30 @@ for v, seed in ((1, 31), (2, 32), (3, 33)):
     x = silence(0.3)
     x = place(x, 0.35 * swish(0.16, 500, 1300, r, attack=0.03), 0.0)
     x = place(x, 0.9 * mode(330 * (1 + 0.04 * v), 0.05, 0.2) + 0.5 * mode(720 * (1 + 0.03 * v), 0.03, 0.2), 0.12)
-    write('jump' if v == 1 else f'jump_{v}', x, -13)
+    write('jump' if v == 1 else f'jump_{v}', x, -1)
 
 # tray: a captured disc landing in the wooden tray, a short "da", three variants
 for v, seed in ((1, 41), (2, 42), (3, 43)):
-    write('tray' if v == 1 else f'tray_{v}', knock(1.0, 0.45 + 0.05 * v, random.Random(seed), seconds=0.09), -12)
+    write('tray' if v == 1 else f'tray_{v}', knock(1.0, 0.45 + 0.05 * v, random.Random(seed), seconds=0.09), -1)
 
 # crown: one xylophone note ("ding")
-write('crown', note(1046.5, 0.7, 0.35, partials=((1, 1.0), (3.9, 0.12), (9.2, 0.03)), attack=0.003), -11)
+write('crown', note(1046.5, 0.7, 0.35, partials=((1, 1.0), (3.9, 0.12), (9.2, 0.03)), attack=0.003), -1)
 
 # bump: illegal / must-jump soft knock
-write('bump', lowpass(0.9 * mode(420, 0.025, 0.12) + 0.3 * mode(860, 0.012, 0.12), 1800, 1), -14)
+write('bump', lowpass(0.9 * mode(420, 0.025, 0.12) + 0.3 * mode(860, 0.012, 0.12), 1800, 1), -2)
 
 bell = ((1, 1.0), (2.0, 0.18), (3.0, 0.05), (4.2, 0.03))
 # win: three notes rising
 x = silence(1.2)
 for at, f, d in ((0.0, 523.25, 0.3), (0.16, 659.25, 0.3), (0.32, 783.99, 0.7)):
     x = place(x, note(f, d + 0.3, d, partials=bell, attack=0.006), at)
-write('win', x, -11)
+write('win', x, -1)
 
 # lose / draw: two notes falling
 x = silence(0.9)
 for at, f, d in ((0.0, 523.25, 0.3), (0.2, 392.0, 0.5)):
     x = place(x, note(f, d + 0.3, d, partials=bell, attack=0.006), at)
-write('lose', x, -12)
+write('lose', x, -1)
 
 print('wrote', sorted(os.listdir(OUT)))
 check()

@@ -11,6 +11,7 @@ import com.pico.spatial.core.math.Vector3
 import com.pico.spatial.tracking.DataProvider
 import com.pico.spatial.tracking.hmd.HMDTrackingProvider
 import io.embodit.kingsrow.domain.LevelGate
+import io.embodit.kingsrow.domain.WindowPolicy
 import kotlin.math.asin
 
 /**
@@ -29,6 +30,7 @@ class WindowCtl {
 
     private var open: (() -> Unit)? = null
     private var close: (() -> Unit)? = null
+    private var closeBoard: (() -> Unit)? = null
     private var recallPending = false
     private var lastStepMs = 0L
     private val main = Handler(Looper.getMainLooper())
@@ -38,13 +40,21 @@ class WindowCtl {
     val closed: Boolean get() = panelState == "ON_DESTROY"
 
     /** The board screen hands over the navigator calls (the window's own composition can't reopen itself). */
-    fun attach(open: () -> Unit, close: () -> Unit) {
+    fun attach(open: () -> Unit, close: () -> Unit, closeBoard: () -> Unit) {
         this.open = open
         this.close = close
+        this.closeBoard = closeBoard
+    }
+
+    /** D26 / D44 exit: close both containers (control window, then the board volume). */
+    fun closeAll() {
+        Log.i(TAG, "WINDOW close all (exit)")
+        runCatching { close?.invoke() }.onFailure { Log.w(TAG, "close control: $it") }
+        runCatching { closeBoard?.invoke() }.onFailure { Log.w(TAG, "close board: $it") }
     }
 
     fun detach() {
-        open = null; close = null
+        open = null; close = null; closeBoard = null
         gate.cancel()
         main.removeCallbacks(watchdog)
         runCatching { hmd?.stop() }
@@ -60,10 +70,20 @@ class WindowCtl {
         main.postDelayed(watchdog, 3000)
     }
 
-    /** Settings [叫回面前]: close and reopen in front of the user. */
+    /**
+     * Settings [叫回面前]: close, then reopen with Placement.none() (the system's in-front default, D44). No level
+     * gate wait: Shared Space gives no head pose, so the gate could only time out.
+     */
     fun recall() {
-        if (panelState == "never" || panelState == "ON_DESTROY") request("recall")
-        else { recallPending = true; Log.i(TAG, "WINDOW recall close"); close?.invoke() }
+        WindowPolicy.reopened = true
+        if (panelState == "never" || panelState == "ON_DESTROY") openNow("recall", null)
+        else if (!recallPending) { recallPending = true; Log.i(TAG, "WINDOW recall close"); close?.invoke() }
+    }
+
+    /** The control window was closed with the system ×: a pinch on the board reopens it in front. */
+    fun reopen(why: String) {
+        WindowPolicy.reopened = true
+        openNow(why, null)
     }
 
     /** Debug: close the window like the system ×. */
@@ -72,7 +92,7 @@ class WindowCtl {
     fun onPanelLifecycle(event: String) {
         panelState = event
         Log.i(TAG, "WINDOW lifecycle $event")
-        if (recallPending && event == "ON_DESTROY") { recallPending = false; request("recall") }
+        if (recallPending && event == "ON_DESTROY") { recallPending = false; openNow("recall", null) }
     }
 
     /** Called every frame by the board's ECS system. */
@@ -87,7 +107,9 @@ class WindowCtl {
 
     private fun openNow(why: String, pitch: Float?) {
         main.removeCallbacks(watchdog)
-        Log.i(TAG, "WINDOW open why=$why pitch=$pitch")
+        gate.cancel()
+        levelHint = false
+        Log.i(TAG, "WINDOW open why=$why pitch=$pitch anchor=${WindowPolicy.anchor()}")
         open?.invoke()
     }
 

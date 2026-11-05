@@ -1,7 +1,7 @@
 # Kings Row 西洋跳棋: project guidance
 
 English / American checkers for PICO OS 6 Shared Space, PICO Spatial SDK 6.1.9, package `io.embodit.kingsrow`,
-v0.1.0. Design contract: factory `apps/kings-row/design-package.json` (v1 = everything outside `v2[]`), sample
+v0.1.1. Design contract: factory `apps/kings-row/design-package.json` (v1 = everything outside `v2[]`), sample
 `apps/kings-row/sample.html`. Started from the Cloud Air skeleton (gradle, fonts, theme pattern, SoundPool, icon
 builder); the domain, engine and scene are new.
 
@@ -10,7 +10,9 @@ Two surfaces:
   aligned): oak board 0.56 m tipped 20° about its near bottom edge, 24 discs (Ø 4.6 x 1.0 cm; a king = two discs),
   two trays (Black's on the right, Red's on the left) with 3 stacks + a spare cell, an upright seat card behind the
   far edge and a "吃了 N" card on each tray. No buttons in the volume.
-- **Control window** (`WindowContainer("KingsControl")`, Planar 560 x 440 dp, `Placement.right(board)`), native
+- **Control window** (`WindowContainer("KingsControl")`, Planar 600 x 640 dp so the longest page needs no scrolling;
+  first open `Placement.right(board)`, every reopen (叫回面前, pinch after the system ×) `Placement.none()` via
+  `domain/WindowPolicy`), native
   `TabBar` with four pages: 对局 / 新局 / 规则 / 设置 (exit with in-page confirm at the bottom of 设置).
 
 ## Rules that stay in force
@@ -25,6 +27,12 @@ Two surfaces:
 - Input: pinch / trigger arrive through `detectSpatialTapGesture` on `sq:<i>` pads and `pc:<i>` piece colliders;
   drag through `detectSpatialDragGesture` (drop snaps to the nearest dark square within 1.5 squares). The head pose
   is read only by `WindowCtl` for the D9 level gate (Shared Space reports NOT_IN_FULL_SPACE -> 1.5 s fallback).
+- Every tappable control is >= 48 dp: `Segments` is 52 dp (SegmentControl default is 40), on / off are two-part
+  segments (no bare Switch), volume is a 3-stop slider with %. A drag in the guided first game and a pinch while a
+  move plays / the AI thinks answer with a sentence (seat card + status line), never silently.
+- Sounds: `tools/make_sounds.py` (peaks -1..-3 dBFS), `tools/loudness.py <out.wav>` renders the 30 s default-volume
+  evidence (factory `apps/kings-row/qa/loudness-<version>.wav`, gate: RMS >= -20 dBFS).
+- The board volume's lifecycle drives `GameFlow.onBackground / onForeground`; quitting closes both containers.
 
 ## Layout
 | Path | What |
@@ -62,7 +70,7 @@ force-stop that leftover app before screenshots.
 | `new "black 1"` / `new "red 3"` / `new "random 5"` · `undo` · `backturn` · `hint on|off` · `resign` · `restart` · `confirm` · `cancel` | buttons |
 | `freeze 260|off` · `hold on|off` · `seed N` | screenshot helpers |
 | `lang zh|en|system` · `sound on|off` · `volume 0-2` · `reduced on|off` · `coach on|off` · `level 1-5` | settings |
-| `page play|new|rules|settings` · `exitask` · `closepanel` · `reopen` · `recall` · `dump` · `evidence` | window |
+| `page play|new|rules|settings` · `exitask` · `closepanel` · `reopen` (= pinch after ×, opens in front) · `recall` · `dump` · `evidence` | window |
 
 S00 = the first 0.5 s after a cold start (fallback slab + discs). Log tag `KingsRow`: `GAME`, `TURN`, `SELECT`,
 `MOVE`, `CHAIN`, `CROWN`, `AI think|move`, `ALERT`, `UNDO`, `RESULT`, `WINDOW`, `PAGE`, `OVERFLOW`, `SCENE`, `CMD`.

@@ -162,7 +162,7 @@ data class Chain(val from: Int, val steps: List<Int>, val captured: List<Int>) {
     val at: Int get() = steps.lastOrNull() ?: from
 }
 
-enum class AlertKind { MUST_JUMP, STUCK, ILLEGAL, NOT_YOURS }
+enum class AlertKind { MUST_JUMP, STUCK, ILLEGAL, NOT_YOURS, NO_DRAG, BUSY }
 
 data class Alert(val kind: AlertKind, val square: Int, val pulse: Set<Int>, val at: Long)
 

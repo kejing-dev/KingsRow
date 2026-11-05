@@ -111,3 +111,14 @@ class EngineLayoutTest {
         assertEquals(300L, Timeline.moveTotal(2, true, true))
     }
 }
+
+class WindowPolicyTest {
+    @Test fun firstOpenBesideBoardReopenInFront() {
+        org.junit.Assert.assertEquals(WindowAnchor.RIGHT_OF_BOARD, WindowPolicy.anchor(reopen = false))
+        org.junit.Assert.assertEquals(WindowAnchor.IN_FRONT, WindowPolicy.anchor(reopen = true))
+    }
+
+    @Test fun emulatorEyesAreChecked() {
+        org.junit.Assert.assertTrue(Layout.eyes().any { it.first.startsWith("emu") })
+    }
+}
