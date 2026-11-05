@@ -71,18 +71,16 @@ class WindowCtl {
     }
 
     /**
-     * Settings [叫回面前]: close, then reopen with Placement.none() (the system's in-front default, D44). No level
-     * gate wait: Shared Space gives no head pose, so the gate could only time out.
+     * Settings [重开控制窗]: close, wait for ON_DESTROY, open again beside the board (Placement.right, D44 corrected;
+     * nothing promises "in front of you"). No level gate wait: Shared Space gives no head pose.
      */
     fun recall() {
-        WindowPolicy.reopened = true
         if (panelState == "never" || panelState == "ON_DESTROY") openNow("recall", null)
         else if (!recallPending) { recallPending = true; Log.i(TAG, "WINDOW recall close"); close?.invoke() }
     }
 
-    /** The control window was closed with the system ×: a pinch on the board reopens it in front. */
+    /** The control window was closed with the system ×: a pinch on the board reopens it beside the board. */
     fun reopen(why: String) {
-        WindowPolicy.reopened = true
         openNow(why, null)
     }
 

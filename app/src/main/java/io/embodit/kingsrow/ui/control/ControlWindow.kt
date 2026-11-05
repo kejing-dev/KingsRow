@@ -65,6 +65,7 @@ import io.embodit.kingsrow.ui.Containers
 import io.embodit.kingsrow.ui.Page
 import io.embodit.kingsrow.ui.Ui
 import io.embodit.kingsrow.ui.theme.KingsColors
+import io.embodit.kingsrow.ui.theme.KingsTheme
 import kotlinx.coroutines.delay
 import kotlin.system.exitProcess
 
@@ -120,8 +121,9 @@ fun ControlWindow() {
             item(
                 selected = Ui.page == page,
                 onClick = { Ui.page = page; Ui.pickedByUser = true },
-                mainContent = { Icon(painter = painterResource(icon), contentDescription = stringResource(label)) },
-                supportContent = { Txt(stringResource(label), "tabbar/${page.name}", style = PicoTheme.typography.labelMedium) },
+                // the TabBar is its own system window: re-provide the localized theme so its labels follow the language
+                mainContent = { KingsTheme { Icon(painter = painterResource(icon), contentDescription = stringResource(label)) } },
+                supportContent = { KingsTheme { Txt(stringResource(label), "tabbar/${page.name}", style = PicoTheme.typography.labelMedium) } },
             )
         }
     }

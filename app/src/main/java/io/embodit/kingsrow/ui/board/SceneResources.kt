@@ -73,6 +73,8 @@ internal class SceneResources private constructor() {
     lateinit var squareShape: ShapeResource; private set
     lateinit var manShape: ShapeResource; private set
     lateinit var kingShape: ShapeResource; private set
+    lateinit var slabShape: ShapeResource; private set
+    lateinit var trayShape: ShapeResource; private set
     lateinit var physics: PhysicsMaterialResource; private set
 
     fun close() {
@@ -120,6 +122,9 @@ internal class SceneResources private constructor() {
                 async(io) { r.manShape = ShapeResource.createBox(Vector3(Layout.PIECE_R * 2, Layout.PIECE_H, Layout.PIECE_R * 2)).keep() },
                 async(io) { r.kingShape = ShapeResource.createBox(Vector3(Layout.PIECE_R * 2, Layout.PIECE_H * 2, Layout.PIECE_R * 2)).keep() },
                 async(io) { r.physics = PhysicsMaterialResource().keep() },
+                // the wood and the trays answer a pinch too (S10: pinch the board to reopen the panel)
+                async(io) { r.slabShape = ShapeResource.createBox(Vector3(Layout.BOARD, Layout.THICK, Layout.BOARD)).keep() },
+                async(io) { r.trayShape = ShapeResource.createBox(Vector3(Layout.TRAY_W, Layout.TRAY_RIM, Layout.TRAY_L)).keep() },
                 async(io) { r.oak = pbr(KingsColors.Oak, roughness = 0.6f).keep() },
                 async(io) { r.oakDark = pbr(KingsColors.OakEdge, roughness = 0.62f).keep() },
                 async(io) { r.ebony = pbr(KingsColors.Ebony, roughness = 0.42f).keep() },

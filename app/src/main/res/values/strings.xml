@@ -123,8 +123,8 @@
     <string name="settings_reduced">Reduce motion</string>
     <string name="settings_coach">Guided first game</string>
     <string name="settings_coach_again">Turn on again</string>
-    <string name="settings_recall">Bring panel here</string>
-    <string name="settings_recall_hint">The panel closes, then opens again in front of you. Board cards too small? Drag the board closer with the handle under it.</string>
+    <string name="settings_recall">Reopen panel</string>
+    <string name="settings_recall_hint">The panel reopens next to the board. Move it with the system handle. Board cards too small? Drag the board closer with its handle.</string>
     <string name="settings_about">About</string>
     <string name="settings_about_text">Kings Row %1$s · rules are public domain · Noto Sans (SIL OFL 1.1) · PICO icons · works offline, no account.</string>
     <string name="settings_exit">Quit</string>

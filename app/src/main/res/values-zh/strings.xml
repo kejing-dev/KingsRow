@@ -116,8 +116,8 @@
     <string name="settings_reduced">减少动态</string>
     <string name="settings_coach">首局引导</string>
     <string name="settings_coach_again">重新打开</string>
-    <string name="settings_recall">叫回面前</string>
-    <string name="settings_recall_hint">面板会先关掉，再在你正前方打开。棋盘上的小牌看不清，就用棋台下方的系统把手把棋台拖近。</string>
+    <string name="settings_recall">重开控制窗</string>
+    <string name="settings_recall_hint">面板会在棋盘旁重新打开，用系统把手挪。棋盘上的小牌看不清，就用棋台下方的系统把手把棋台拖近。</string>
     <string name="settings_about">关于</string>
     <string name="settings_about_text">西洋跳棋 %1$s · 规则是公有领域 · Noto Sans（SIL OFL 1.1）· PICO 图标 · 全离线，不用账号。</string>
     <string name="settings_exit">退出应用</string>

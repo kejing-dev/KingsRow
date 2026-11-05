@@ -1,14 +1,14 @@
 package io.embodit.kingsrow.domain
 
 /**
- * Where the control window opens (profile D44 第 1 条): the first open sits beside the board volume
- * (Placement.right), every reopen ("叫回面前", the pinch-to-reopen after the system ×) uses the system's
- * in-front default (Placement.none()). Reusing Placement.right for a reopen only reopens it where it was.
+ * Where the control window opens (profile D44, corrected 2026-11-05 afternoon): Shared Space gives no head pose and
+ * Placement.none() does not follow the head (a reopen lands at the world's initial front, right on top of the board).
+ * So the first open AND every reopen ([重开控制窗], the pinch on the board after the system ×) use
+ * Placement.right(board volume): the window comes back beside the board and never covers it. Nothing promises
+ * "in front of you"; the user moves it with the system handle under the window.
  */
-enum class WindowAnchor { RIGHT_OF_BOARD, IN_FRONT }
+enum class WindowAnchor { RIGHT_OF_BOARD }
 
 object WindowPolicy {
-    @Volatile var reopened: Boolean = false
-
-    fun anchor(reopen: Boolean = reopened): WindowAnchor = if (reopen) WindowAnchor.IN_FRONT else WindowAnchor.RIGHT_OF_BOARD
+    fun anchor(@Suppress("UNUSED_PARAMETER") reopen: Boolean = false): WindowAnchor = WindowAnchor.RIGHT_OF_BOARD
 }

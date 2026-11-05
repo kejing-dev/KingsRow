@@ -194,6 +194,13 @@ internal class BoardScene {
         res = r
         val t0 = SystemClock.elapsedRealtime()
         boardRoot.addChild(ModelEntity(r.slab, r.oakDark).apply { setName("slab"); transform().setPosition(Vector3(0f, -Layout.THICK / 2 - 0.0004f, 0f)) })
+        // the wood itself is pinchable (below the square pads and the pieces, which win the ray first)
+        boardRoot.addChild(Entity().apply {
+            setName("board")
+            transform().setPosition(Vector3(0f, -Layout.THICK / 2 - 0.001f, 0f))
+            components.set(CollisionComponent(collisionShape = listOf(r.slabShape), physicsMaterial = r.physics))
+            components.set(InteractableComponent())
+        })
         boardRoot.addChild(ModelEntity(r.face, r.faceMat).apply {
             setName("face")
             transform().setPosition(Vector3(0f, 0.0003f, 0f))
@@ -225,6 +232,12 @@ internal class BoardScene {
             tray.addChild(bar("trayRimBack:$side", V3(Layout.TRAY_W, Layout.TRAY_RIM + 0.01f, wall), V3(c.x, (Layout.TRAY_RIM + 0.01f) / 2, c.z - Layout.TRAY_L / 2 + wall / 2)))
             // divider between the spare cell and the stacks
             tray.addChild(bar("trayDivider:$side", V3(Layout.TRAY_W, Layout.TRAY_RIM * 0.6f, wall * 0.75f), V3(c.x, Layout.TRAY_RIM * 0.3f, Layout.SPARE_Z + 0.027f)))
+            tray.addChild(Entity().apply {
+                setName("trayHit:$side")
+                place(this, V3(c.x, Layout.TRAY_RIM / 2, c.z))
+                components.set(CollisionComponent(collisionShape = listOf(r.trayShape), physicsMaterial = r.physics))
+                components.set(InteractableComponent())
+            })
             val glow = ModelEntity(r.unitBox, r.amberSoft).apply {
                 setName("trayGlow:$side"); transform().setScaleVector(Vector3(Layout.TRAY_W + 0.012f, 0.0008f, Layout.TRAY_L + 0.012f))
                 place(this, V3(c.x, -0.0004f, c.z)); enabled = false
