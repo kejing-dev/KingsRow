@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher background: the app's own wine red (design appIcon #7A1F2B), not used by any other factory app. -->
+    <color name="ic_launcher_background">#FF7A1F2B</color>
+</resources>

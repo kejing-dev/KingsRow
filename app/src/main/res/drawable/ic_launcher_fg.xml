@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kings Row launcher foreground: a king, two stacked discs seen from 3/4 above (oak on ebony) with a gold crown.
+     tools/build_icon.py draws the same artwork for the PICO layered icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- lower disc (ebony) -->
+    <path android:fillColor="#FF1E1A18" android:pathData="M27,62 L27,70 A27,12 0 0,0 81,70 L81,62 Z" />
+    <path android:fillColor="#FF2E2824" android:strokeColor="#FFF4E9D6" android:strokeWidth="1.2" android:pathData="M27,62 A27,12 0 1,0 81,62 A27,12 0 1,0 27,62 Z" />
+    <!-- upper disc (oak) -->
+    <path android:fillColor="#FFB8925E" android:pathData="M27,50 L27,58 A27,12 0 0,0 81,58 L81,50 Z" />
+    <path android:fillColor="#FFE3C796" android:strokeColor="#FFF4E9D6" android:strokeWidth="1.2" android:pathData="M27,50 A27,12 0 1,0 81,50 A27,12 0 1,0 27,50 Z" />
+    <path android:strokeColor="#FFB8925E" android:strokeWidth="1" android:pathData="M33,50 A21,9 0 1,0 75,50 A21,9 0 1,0 33,50 Z" />
+    <!-- crown -->
+    <path android:fillColor="#FFE2B347" android:strokeColor="#FF7A5210" android:strokeWidth="0.8"
+        android:pathData="M42,54 L42,45 L47.5,49 L54,41 L60.5,49 L66,45 L66,54 Z" />
+</vector>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ic_bulb.svg from the PICO ICON 7.0 pack -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M16 18.25C16 20.4591 14.2091 22.25 12 22.25C9.79086 22.25 8 20.4591 8 18.25H16Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M12 1.75C16.4183 1.75 20 5.33172 20 9.75C20 12.763 18.3337 15.3856 15.873 16.75H12.75V12.5605L16.0303 9.28027L14.9697 8.21973L12 11.1895L9.03027 8.21973L7.96973 9.28027L11.25 12.5605V16.75H8.12695C5.66629 15.3856 4 12.763 4 9.75C4 5.33172 7.58172 1.75 12 1.75Z" />
+</vector>

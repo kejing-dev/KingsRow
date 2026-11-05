@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kings Row</string>
+
+    <!-- board cards -->
+    <string name="level_hint">Look straight ahead and the panel opens</string>
+    <string name="seat_panel_closed">Pinch the board to bring the panel back</string>
+    <string name="restored">Picking up where you left off</string>
+    <string name="seat_setup">Pick a side, then tap Start</string>
+    <string name="seat_draw">Draw</string>
+    <string name="seat_win">You win</string>
+    <string name="seat_lose">It wins</string>
+    <string name="seat_crown">Far row. Crowned.</string>
+    <string name="seat_chain">Keep jumping. Pick a side.</string>
+    <string name="seat_thinking">Thinking…</string>
+    <string name="seat_your_move">%1$s to move · Pick a piece</string>
+    <string name="color_black">Black</string>
+    <string name="color_red">Red</string>
+    <string name="tray_count">Took %1$d</string>
+
+    <!-- tabs -->
+    <string name="tab_play">Game</string>
+    <string name="tab_new">New game</string>
+    <string name="tab_rules">Rules</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- AI levels -->
+    <string name="level_1">1 Starter</string>
+    <string name="level_2">2 Easy</string>
+    <string name="level_3">3 Medium</string>
+    <string name="level_4">4 Hard</string>
+    <string name="level_5">5 Master</string>
+    <string name="level_1_sub">Just learned the moves</string>
+    <string name="level_2_sub">The old man next door</string>
+    <string name="level_3_sub">Park bench regular</string>
+    <string name="level_4_sub">County champ</string>
+    <string name="level_5_sub">Never blinks</string>
+
+    <!-- play page -->
+    <string name="play_empty">No game yet. Pick a side and a level on the New game page.</string>
+    <string name="btn_new_game">New game</string>
+    <string name="turn_you">Your move · %1$s</string>
+    <string name="turn_ai">AI %1$s</string>
+    <string name="score">You %1$d · It %2$d</string>
+    <string name="btn_back_turn">Back to turn start</string>
+    <string name="btn_undo">Undo</string>
+    <string name="btn_hint">Hint</string>
+    <string name="btn_mute">Mute</string>
+    <string name="btn_resign_restart">Resign / Restart</string>
+    <string name="status_must_jump_one">You have to jump this turn. The glowing piece can.</string>
+    <string name="status_must_jump_two">You have to jump this turn. The two glowing pieces can. Pick one.</string>
+    <string name="status_must_jump_many">You have to jump this turn. The glowing pieces can. Pick one.</string>
+    <string name="status_stuck">That one can\'t move.</string>
+    <string name="status_illegal">Can\'t go there. Pick a lit square.</string>
+    <string name="status_not_yours">That\'s its piece. Pick one of yours.</string>
+    <string name="status_crown_you">Far row. Crowned. It can move backwards now.</string>
+    <string name="status_crown_ai">It reached your back row. Crowned.</string>
+    <string name="status_moving">Moving…</string>
+    <string name="status_ai_moving">Its move…</string>
+    <string name="coach_1">Pinch a glowing piece. The squares it can reach light up.</string>
+    <string name="coach_2">Blue dot: slide there. Orange ring: jump and take.</string>
+    <string name="coach_3">Taken pieces fly into your tray on the right.</string>
+    <string name="status_selected_jump">Jump it: pinch the orange ring.</string>
+    <string name="status_selected">Pinch a blue dot to slide. Pinch elsewhere to cancel.</string>
+    <string name="status_your_move">Your move · Pick a piece</string>
+    <string name="no_progress">No capture %1$d/40</string>
+    <string name="confirm_resign_q">Stop this game?</string>
+    <string name="confirm_resign_note">Resign and it wins. Restart and this game never happened.</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_restart">Restart</string>
+    <string name="btn_resign">Resign</string>
+    <string name="result_draw_forty">Draw. 40 moves, no capture, no crowning.</string>
+    <string name="result_draw_repeat">Draw. Same position three times.</string>
+    <string name="result_resigned">You resigned. Again?</string>
+    <string name="result_win_pieces">You win. They\'re out of pieces.</string>
+    <string name="result_win_blocked">You win. They have no move left.</string>
+    <string name="result_lose_pieces">It wins. You\'re out of pieces.</string>
+    <string name="result_lose_blocked">It wins. You have no move left.</string>
+    <string name="result_stats">%1$d moves · you took %2$d · it took %3$d · AI %4$s</string>
+    <string name="btn_again">Again</string>
+    <string name="btn_menu">Menu</string>
+    <string name="source_line">Rules: American Checkers / English Draughts. 40 moves with no capture or crowning is a draw.</string>
+
+    <!-- new game -->
+    <string name="new_title">New game</string>
+    <string name="btn_continue">Continue</string>
+    <string name="new_side">Side</string>
+    <string name="new_side_black">Black (first)</string>
+    <string name="new_side_red">Red</string>
+    <string name="new_side_random">Random</string>
+    <string name="new_level">AI level</string>
+    <string name="btn_start">Start</string>
+    <string name="new_note">Black moves first. Starter is beatable on your first try.</string>
+
+    <!-- rules -->
+    <string name="welcome_title">How checkers works</string>
+    <string name="rules_title">Rules</string>
+    <string name="rules_1">Slide one square diagonally. If an enemy piece sits next to you with an empty square behind it, jump it.</string>
+    <string name="rules_2">If you can keep jumping, you must.</string>
+    <string name="rules_3">Reach the far row and a second piece lands on top: that\'s a king, and kings move backwards.</string>
+    <string name="rules_4">Take every piece, or leave them no move, and you win.</string>
+    <string name="rules_mistakes">Common beginner slips</string>
+    <string name="mistake_1">Don\'t rush your back row. Empty it and they crown the moment they get there.</string>
+    <string name="mistake_2">Jumps are forced. That free piece is probably bait.</string>
+    <string name="mistake_3">After a jump, look again. If you can keep jumping, you must.</string>
+    <string name="mistake_4">A king isn\'t safe. Two men can still trap one.</string>
+    <string name="diagram_slide">Slide</string>
+    <string name="diagram_jump">Jump</string>
+    <string name="diagram_chain">Keep going</string>
+    <string name="diagram_crown">Crowned</string>
+
+    <!-- settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="lang_system">System</string>
+    <string name="lang_zh">中文</string>
+    <string name="lang_en">English</string>
+    <string name="settings_sound">Sound</string>
+    <string name="settings_volume">Volume</string>
+    <string name="volume_low">Low</string>
+    <string name="volume_mid">Mid</string>
+    <string name="volume_high">High</string>
+    <string name="settings_reduced">Reduce motion</string>
+    <string name="settings_coach">Guided first game</string>
+    <string name="settings_coach_again">Turn on again</string>
+    <string name="settings_recall">Bring panel here</string>
+    <string name="settings_recall_hint">The panel closes, then opens in front of you once you look straight ahead.</string>
+    <string name="settings_about">About</string>
+    <string name="settings_about_text">Kings Row %1$s · rules are public domain · Noto Sans (SIL OFL 1.1) · PICO icons · works offline, no account.</string>
+    <string name="settings_exit">Quit</string>
+    <string name="confirm_exit">Quit Kings Row? Your game is saved.</string>
+    <string name="confirm_yes_exit">Quit</string>
+</resources>
