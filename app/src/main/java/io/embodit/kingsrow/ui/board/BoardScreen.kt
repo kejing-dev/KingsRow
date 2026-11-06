@@ -152,7 +152,7 @@ fun BoardScreen() {
                 detectSpatialTapGesture(context, TargetEntity.any()) { tap ->
                     val name = tap.targetEntity?.getName()
                     Log.i(TAG, "TAP target=$name kind=${tap.interactionKind}")
-                    // S10: with the control window closed, a pinch anywhere on the board brings it back in front;
+                    // S10: with the control window closed, a pinch on the board / a piece / a tray reopens it beside the board;
                     // the same pinch still counts on the board (critic suggestion 3)
                     if (graph.window.closed) graph.window.reopen("pinch")
                     val sq = scene.squareOf(name)

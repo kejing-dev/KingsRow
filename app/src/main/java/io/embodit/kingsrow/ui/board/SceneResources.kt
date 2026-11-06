@@ -32,6 +32,9 @@ internal fun Color.c4(alpha: Float = this.alpha): Color4 = Color4(red, green, bl
  * resource waits on the renderer (~1 s round trip on the emulator), so everything is created concurrently on
  * Dispatchers.IO (Xiangqi BoardScene.createResources) and kept global until [close].
  *
+ * Every material is OPAQUE (MASKED for the round piece caps); v0.1.3 made the board marks opaque too, so the
+ * instance list has no transparent entry (design mustPass 8). The opacity parameter of [unlit] is unused.
+ *
  * Geometry note (B12 / ui_gates "geometry"): the design package's asset list makes the board, the 28 discs and the
  * two trays procedural on purpose ("无 Tripo（没有具象子）": checkers men are plain turned discs with exact sizes);
  * the gate:allow lines say so per call.
@@ -76,6 +79,20 @@ internal class SceneResources private constructor() {
     lateinit var slabShape: ShapeResource; private set
     lateinit var trayShape: ShapeResource; private set
     lateinit var physics: PhysicsMaterialResource; private set
+
+    /** Material -> (name, blending) for the instance list (debug `instances`, design mustPass 8). */
+    fun describe(m: Material?): Pair<String, String> {
+        if (m == null) return "?" to "?"
+        val masked = listOf("capBlackMan" to capBlackMan, "capBlackKing" to capBlackKing, "capRedMan" to capRedMan, "capRedKing" to capRedKing)
+        masked.firstOrNull { it.second === m }?.let { return it.first to "MASKED" }
+        val opaque = listOf(
+            "oak" to oak, "oakDark" to oakDark, "faceMat" to faceMat, "ebony" to ebony, "wine" to wine,
+            "selBlack" to selBlack, "selWhite" to selWhite, "selRed" to selRed, "blue" to blue, "orange" to orange, "red" to red,
+            "green" to green, "white" to white, "amber" to amber, "amberSoft" to amberSoft, "gold" to gold, "coach" to coach,
+        )
+        opaque.firstOrNull { it.second === m }?.let { return it.first to "OPAQUE" }
+        return "unknown" to "?"
+    }
 
     fun close() {
         synchronized(all) { all.forEach { runCatching { it.close() } }; all.clear() }
@@ -132,15 +149,15 @@ internal class SceneResources private constructor() {
                 async(io) { r.selBlack = unlit(KingsColors.SelectBlack).keep() },
                 async(io) { r.selWhite = unlit(Color(0xFFFFFFFF)).keep() },
                 async(io) { r.selRed = unlit(KingsColors.Primary).keep() },
-                async(io) { r.blue = unlit(KingsColors.Target, 0.9f).keep() },
+                async(io) { r.blue = unlit(KingsColors.Target).keep() },
                 async(io) { r.orange = unlit(KingsColors.CaptureLanding).keep() },
                 async(io) { r.red = unlit(KingsColors.Error).keep() },
                 async(io) { r.green = unlit(KingsColors.ChainGreen).keep() },
-                async(io) { r.white = unlit(Color(0xFFFFFFFF), 0.85f).keep() },
+                async(io) { r.white = unlit(Color(0xFFFFFFFF)).keep() },
                 async(io) { r.amber = unlit(KingsColors.Tertiary).keep() },
-                async(io) { r.amberSoft = unlit(KingsColors.Tertiary, 0.35f).keep() },
-                async(io) { r.gold = unlit(KingsColors.Gold, 0.9f).keep() },
-                async(io) { r.coach = unlit(Color(0xFFFFF4D6), 0.55f).keep() },
+                async(io) { r.amberSoft = unlit(Color(0xFFEFD49A)).keep() },
+                async(io) { r.gold = unlit(KingsColors.Gold).keep() },
+                async(io) { r.coach = unlit(Color(0xFFFFF4D6)).keep() },
             ).awaitAll()
             r.faceMat = PhysicallyBasedMaterial.create(BlendingMode.OPAQUE).apply {
                 setBaseColor(Color4(1f, 1f, 1f, 1f)); setRoughness(0.6f); setMetallic(0f); setBaseColorTexture(faceTex.await())

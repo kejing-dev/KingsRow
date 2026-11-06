@@ -72,7 +72,7 @@ class WindowCtl {
 
     /**
      * Settings [重开控制窗]: close, wait for ON_DESTROY, open again beside the board (Placement.right, D44 corrected;
-     * nothing promises "in front of you"). No level gate wait: Shared Space gives no head pose.
+     * the copy only says "next to the board"). No level gate wait: Shared Space gives no head pose.
      */
     fun recall() {
         if (panelState == "never" || panelState == "ON_DESTROY") openNow("recall", null)

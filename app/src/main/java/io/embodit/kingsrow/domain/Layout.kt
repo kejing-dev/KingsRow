@@ -208,7 +208,7 @@ object Layout {
             }
             for ((en, eye) in eyes()) cs.forEachIndexed { i, p ->
                 for ((bn, b) in boxes) {
-                    // the card's own tray is the thing it is attached to: its rim is under the card, not in front of it
+                    // the card's own tray is the thing it is attached to: its rim is under the card, not between the eye and it
                     if (bn == ownTray(name)) continue
                     if (segmentHits(eye, p, b)) out += "$name corner$i from $en crosses $bn"
                 }

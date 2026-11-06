@@ -113,6 +113,7 @@ class DebugCommandReceiver : BroadcastReceiver() {
             "recall" -> graph.window.recall()
             "dump", "state" -> Log.i(TAG, "DUMP ${flow.dump()} page=${Ui.page} window=${graph.window.panelState}")
             "evidence" -> Log.i(TAG, "EVIDENCE ${SceneHolder.scene?.evidence() ?: "no scene"}")
+            "instances" -> (SceneHolder.scene?.instances() ?: listOf("no scene")).forEach { Log.i(TAG, "INSTANCE $it") }
             else -> Log.w(TAG, "unknown debug command: $cmd")
         }
     }

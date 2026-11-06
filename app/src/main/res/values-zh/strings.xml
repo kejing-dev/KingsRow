@@ -134,4 +134,8 @@
     <string name="seat_busy">等这步走完</string>
     <string name="status_no_drag">首局先点着走：捏一颗子，再捏亮着的格。拖子下一盘就能用。</string>
     <string name="status_busy">等这步走完再点。</string>
+    <string name="card_opponent">对手</string>
+    <string name="card_move">第几步</string>
+    <string name="card_last">上一步</string>
+    <string name="card_no_progress">无吃无升</string>
 </resources>

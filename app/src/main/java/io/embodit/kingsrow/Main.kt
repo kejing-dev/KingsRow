@@ -29,7 +29,7 @@ fun mainApp(scope: SpatialAppScope) =
             form = Form.Planar,
             defaultSize = WindowContainerSize(width = 600.dp, height = 640.dp),
             // D44 (corrected): first open and every reopen beside the board volume, so the window never covers the board.
-            placement = { containers.firstOrNull { it.id == Containers.BOARD }?.let { Placement.right(it) } ?: Placement.none() },
+            placement = { Placement.right(containers.first { it.id == Containers.BOARD }) },
         ) {
             KingsTheme {
                 Box(Modifier.windowConstraints(minWidth = 560.dp, minHeight = 560.dp, maxWidth = 900.dp, maxHeight = 640.dp)) { ControlWindow() }

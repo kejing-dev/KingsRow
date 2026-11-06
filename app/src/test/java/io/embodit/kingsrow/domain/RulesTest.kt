@@ -11,9 +11,10 @@ class RulesTest {
     private fun sq(s: String) = Sq.parse(s)!!
 
     @Test fun perftMatchesPublicTable() {
-        val expected = longArrayOf(7, 49, 302, 1469, 7361, 36768, 179740)
+        // design mustPass 1: depth 1-8 against the public English-draughts perft table (depth 8 = 845931)
+        val expected = longArrayOf(7, 49, 302, 1469, 7361, 36768, 179740, 845931)
         val p = Position.initial()
-        for (d in 1..7) assertEquals("perft $d", expected[d - 1], Rules.perft(p, d))
+        for (d in 1..8) assertEquals("perft $d", expected[d - 1], Rules.perft(p, d))
     }
 
     @Test fun a1IsDarkAndNearLeftBelongsToBlack() {

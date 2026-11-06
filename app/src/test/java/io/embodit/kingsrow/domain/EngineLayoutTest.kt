@@ -115,7 +115,7 @@ class EngineLayoutTest {
 class WindowPolicyTest {
     @Test fun firstOpenAndReopenBothBesideBoard() {
         org.junit.Assert.assertEquals(WindowAnchor.RIGHT_OF_BOARD, WindowPolicy.anchor(reopen = false))
-        org.junit.Assert.assertEquals(WindowAnchor.RIGHT_OF_BOARD, WindowPolicy.anchor(reopen = true)) // D44 corrected: reopen beside the board, never Placement.none()
+        org.junit.Assert.assertEquals(WindowAnchor.RIGHT_OF_BOARD, WindowPolicy.anchor(reopen = true)) // D44 corrected: reopen beside the board too
     }
 
     @Test fun emulatorEyesAreChecked() {

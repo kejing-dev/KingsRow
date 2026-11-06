@@ -572,6 +572,28 @@ internal class BoardScene {
         else -> null
     }
 
+    /**
+     * Instance list (design mustPass 8): every entity carrying a ModelComponent under the board root, grouped by name
+     * (digits dropped) + material, with blending and whether an OpacityControllerComponent is attached.
+     */
+    fun instances(): List<String> {
+        val r = res ?: return listOf("not built")
+        val rows = LinkedHashMap<String, IntArray>()
+        fun walk(e: Entity) {
+            e.components[ModelComponent::class.java]?.let { mc ->
+                val (mat, blend) = r.describe(mc.materials.firstOrNull())
+                val opacity = e.components[com.pico.spatial.core.ecs.OpacityControllerComponent::class.java] != null
+                val transparent = blend != "OPAQUE" && blend != "MASKED" || opacity
+                val key = "${e.getName().replace(Regex("[0-9-]+"), "#")}|$mat|$blend|opacity=${if (opacity) "yes" else "no"}|transparent=${if (transparent) "YES" else "no"}"
+                val c = rows.getOrPut(key) { IntArray(2) }
+                c[0]++; if (e.enabled) c[1]++
+            }
+            e.getChildren().forEach { walk(it) }
+        }
+        walk(root)
+        return rows.map { (k, c) -> "$k|count=${c[0]}|enabled=${c[1]}" }
+    }
+
     fun evidence(): String =
         "pieces=${pieces.size} trayB=${trayDiscs[Side.BLACK]?.count { it.holder.enabled }} trayR=${trayDiscs[Side.RED]?.count { it.holder.enabled }} " +
             "seat=${Layout.seatCard()} cardB=${Layout.trayCard(Side.BLACK)} cardR=${Layout.trayCard(Side.RED)} a1=${Layout.toScene(Layout.square(Sq.parse("a1")!!))} " +

@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -156,52 +158,76 @@ private fun PlayPage(state: PlayState, settings: Settings, graph: Graph) {
     val flow = graph.flow
     val cfg = state.config
     if (cfg == null || state.phase in setOf(Phase.SETUP, Phase.WELCOME, Phase.LOADING)) {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // short page: centred, big main button (D44: blank <= 25 % of the window)
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
             PageTitle(stringResource(R.string.tab_play), "play")
-            Txt(stringResource(R.string.play_empty), "play/empty", maxLines = 3)
-            PrimaryButton(stringResource(R.string.btn_new_game), "play/new", onClick = { Ui.page = Page.NEW })
+            Txt(stringResource(R.string.play_empty), "play/empty", style = PicoTheme.typography.titleMedium, maxLines = 3)
+            PrimaryButton(stringResource(R.string.btn_new_game), "play/new", onClick = { Ui.page = Page.NEW }, modifier = Modifier.fillMaxWidth().height(72.dp))
         }
         return
     }
-    Column(Modifier.fillMaxSize()) {
+    // The page fills the 640 dp window (D44: blank <= 25 %): turn line, status, a game card, then 64 dp buttons.
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         // whose turn + tray score (same source as the seat card and the tray cards, D38)
-        Row(Modifier.fillMaxWidth().height(44.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
             if (state.result == null) {
                 // while a move / crowning plays, the line still names the side that is moving (same as the seat card)
                 val shown = state.crown?.side ?: state.anim?.side ?: state.toMove
-                SideDot(shown, 22.dp)
+                SideDot(shown, 24.dp)
                 Spacer(Modifier.width(10.dp))
                 Txt(
                     if (shown == cfg.human) stringResource(R.string.turn_you, colorName(cfg.human)) else stringResource(R.string.turn_ai, levelName(cfg.level)),
-                    "play/turn", style = PicoTheme.typography.titleMedium, modifier = Modifier.weight(1f),
+                    "play/turn", style = PicoTheme.typography.titleLarge, modifier = Modifier.weight(1f),
                 )
             } else Spacer(Modifier.weight(1f))
-            Txt(stringResource(R.string.score, state.trays[cfg.human].score, state.trays[cfg.ai].score), "play/score", style = PicoTheme.typography.labelLarge, color = PicoTheme.colorScheme.labelPrimary)
+            Txt(stringResource(R.string.score, state.trays[cfg.human].score, state.trays[cfg.ai].score), "play/score", style = PicoTheme.typography.titleMedium, color = PicoTheme.colorScheme.labelPrimary)
         }
-        Spacer(Modifier.height(8.dp))
         StatusLine(state)
-        Spacer(Modifier.height(10.dp))
-        Box(Modifier.fillMaxWidth().weight(1f)) {
+        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
             when {
                 state.confirm == ConfirmKind.RESIGN_OR_RESTART -> ConfirmBlock(graph)
                 state.result != null -> ResultBlock(state, graph)
-                else -> Unit
+                else -> GameCard(state)
             }
         }
         if (state.result == null && state.confirm == null) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                val tall = Modifier.height(64.dp)
                 if (state.phase == Phase.CHAIN) {
-                    SecondaryButton(stringResource(R.string.btn_back_turn), "play/backturn", onClick = { flow.backTurn() }, modifier = Modifier.weight(1.3f), icon = R.drawable.ic_undo)
+                    SecondaryButton(stringResource(R.string.btn_back_turn), "play/backturn", onClick = { flow.backTurn() }, modifier = tall.weight(1.3f), icon = R.drawable.ic_undo)
                 } else {
-                    SecondaryButton(stringResource(R.string.btn_undo), "play/undo", onClick = { flow.undo() }, enabled = state.canUndo, modifier = Modifier.weight(1.3f), icon = R.drawable.ic_undo)
+                    SecondaryButton(stringResource(R.string.btn_undo), "play/undo", onClick = { flow.undo() }, enabled = state.canUndo, modifier = tall.weight(1.3f), icon = R.drawable.ic_undo)
                 }
-                ToggleButton(stringResource(R.string.btn_hint), "play/hint", on = state.hintOn, onClick = { flow.setHint(!state.hintOn) }, modifier = Modifier.weight(1.1f), icon = R.drawable.ic_hint)
-                ToggleButton(stringResource(R.string.btn_mute), "play/mute", on = !settings.sound, onClick = { graph.settings.update { it.copy(sound = !it.sound) } }, modifier = Modifier.weight(1f),
+                ToggleButton(stringResource(R.string.btn_hint), "play/hint", on = state.hintOn, onClick = { flow.setHint(!state.hintOn) }, modifier = tall.weight(1.1f), icon = R.drawable.ic_hint)
+                ToggleButton(stringResource(R.string.btn_mute), "play/mute", on = !settings.sound, onClick = { graph.settings.update { it.copy(sound = !it.sound) } }, modifier = tall.weight(1f),
                     icon = if (settings.sound) R.drawable.ic_sound_on else R.drawable.ic_sound_off)
             }
-            Spacer(Modifier.height(10.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                SecondaryButton(stringResource(R.string.btn_resign_restart), "play/resign", onClick = { flow.requestConfirm(ConfirmKind.RESIGN_OR_RESTART) }, icon = R.drawable.ic_flag)
+            SecondaryButton(stringResource(R.string.btn_resign_restart), "play/resign", onClick = { flow.requestConfirm(ConfirmKind.RESIGN_OR_RESTART) }, icon = R.drawable.ic_flag,
+                modifier = Modifier.fillMaxWidth().height(56.dp))
+        }
+    }
+}
+
+/** What a player glances at between moves: opponent, move number, last move, the 40-move count (same PlayState). */
+@Composable
+private fun GameCard(state: PlayState) {
+    val cfg = state.config ?: return
+    val last = state.snap.lastMove
+    val rows = listOf(
+        stringResource(R.string.card_opponent) to "AI ${levelName(cfg.level)} · ${levelSub(cfg.level)}",
+        stringResource(R.string.card_move) to ((state.snap.ply / 2) + 1).toString(),
+        stringResource(R.string.card_last) to (last?.notation ?: "—"),
+        stringResource(R.string.card_no_progress) to "${state.noProgressMoves} / 40",
+    )
+    Column(
+        Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
+            .background(PicoTheme.colorScheme.fillSecondary).padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        rows.forEachIndexed { i, (k, v) ->
+            Row(Modifier.fillMaxWidth().height(40.dp), verticalAlignment = Alignment.CenterVertically) {
+                Txt(k, "play/card$i/k", style = PicoTheme.typography.bodyLarge, color = PicoTheme.colorScheme.labelSecondary, modifier = Modifier.width(150.dp))
+                Txt(v, "play/card$i/v", style = PicoTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             }
         }
     }
@@ -336,9 +362,11 @@ private fun NewPage(state: PlayState, settings: Settings, graph: Graph) {
 private fun RulesPage(state: PlayState, graph: Graph) {
     Column(Modifier.fillMaxSize()) {
         // every line fits the 640 dp window without scrolling (D44 首屏); the scroll stays only as a safety net
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            PageTitle(stringResource(if (state.phase == Phase.WELCOME) R.string.welcome_title else R.string.rules_title), "rules")
-            RulesDiagram()
+        val welcome = state.phase == Phase.WELCOME
+        // without the pinned [开始] the page has room: bigger picture and spacing so the blank stays <= 25 % (D44)
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(if (welcome) 4.dp else 7.dp)) {
+            PageTitle(stringResource(if (welcome) R.string.welcome_title else R.string.rules_title), "rules")
+            RulesDiagram(if (welcome) 76.dp else 104.dp)
             listOf(R.string.rules_1, R.string.rules_2, R.string.rules_3, R.string.rules_4).forEach { Txt(stringResource(it), "rules/line", style = PicoTheme.typography.bodyMedium, maxLines = 3) }
             Spacer(Modifier.height(2.dp))
             Txt(stringResource(R.string.rules_mistakes), "rules/mistakes", style = PicoTheme.typography.titleSmall)
@@ -354,12 +382,12 @@ private fun RulesPage(state: PlayState, graph: Graph) {
 
 /** One picture, four cells: slide · jump · keep jumping · crowned (design panels.rules). */
 @Composable
-private fun RulesDiagram() {
+private fun RulesDiagram(cell: androidx.compose.ui.unit.Dp) {
     val labels = listOf(R.string.diagram_slide, R.string.diagram_jump, R.string.diagram_chain, R.string.diagram_crown).map { stringResource(it) }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         for (i in 0 until 4) {
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Canvas(Modifier.size(76.dp)) { diagramCell(i) }
+                Canvas(Modifier.size(cell)) { diagramCell(i) }
                 Txt(labels[i], "rules/diagram$i", style = PicoTheme.typography.labelMedium, maxLines = 1)
             }
         }
@@ -407,7 +435,7 @@ private fun SettingsPage(settings: Settings, graph: Graph) {
     val navigator = LocalSpatialNavigator.current
     fun upd(change: (Settings) -> Settings) { graph.settings.update(change); graph.flow.settingsChanged() }
     val onOff = listOf(true to stringResource(R.string.on), false to stringResource(R.string.off))
-    // every row fits the 640 dp window; [叫回面前] and [退出应用] are on the first screen (D44)
+    // every row fits the 640 dp window; [重开控制窗] and [退出应用] are on the first screen (D44)
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         PageTitle(stringResource(R.string.settings_title), "settings")
         OptionRow(stringResource(R.string.settings_language), "settings/lang") {

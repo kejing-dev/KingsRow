@@ -6,13 +6,20 @@ import kotlin.math.min
 import kotlin.random.Random
 
 /** The five AI levels (design gameSpec.ai.levels). */
-data class Level(val id: Int, val depth: Int, val timeMs: Long, val randomTop: Int) {
+/**
+ * [noise]: every move picks at random among moves scoring within [noise] of the best (0 = always the best). It keeps
+ * the middle levels human-beatable and makes the ladder strictly stronger level by level (design mustPass 2: equal
+ * engines a few plies apart mostly draw; with noise the weaker side makes the slips a club player makes).
+ */
+data class Level(val id: Int, val depth: Int, val timeMs: Long, val randomTop: Int, val noise: Int = 0) {
     companion object {
         val ALL = listOf(
-            Level(1, depth = 1, timeMs = 0, randomTop = 5),    // 入门 刚学会走
+            // 入门 刚学会走: any legal move at random (jumps are forced by the rules anyway). Design ifWrong fallback:
+            // "depth 1, random of the best 5" let a random-move script win only 8 % of 50 games (mustPass 3 wants 40-60 %).
+            Level(1, depth = 1, timeMs = 0, randomTop = 99),
             Level(2, depth = 2, timeMs = 0, randomTop = 3),    // 初级 邻居大爷
-            Level(3, depth = 4, timeMs = 300, randomTop = 1),  // 中级 棋摊常客
-            Level(4, depth = 6, timeMs = 800, randomTop = 1),  // 高级 县里冠军
+            Level(3, depth = 4, timeMs = 300, randomTop = 1, noise = 60),  // 中级 棋摊常客
+            Level(4, depth = 8, timeMs = 800, randomTop = 1, noise = 40),  // 高级 县里冠军
             Level(5, depth = 12, timeMs = 1600, randomTop = 1), // 大师 不眨眼的 (time first; design target <= 1.6 s average)
         )
         fun of(id: Int): Level = ALL[(id - 1).coerceIn(0, 4)]
@@ -49,9 +56,10 @@ class Engine(private val random: Random = Random(7)) {
         val scored = rootScores(pos, moves, level, now)
         val sorted = scored.sortedByDescending { it.second }
         val best = sorted.first().second
+        val tolerance = maxOf(level.noise, if (openingRandom) 20 else 0)
         val pool = when {
             level.randomTop > 1 -> sorted.take(level.randomTop)
-            openingRandom -> sorted.filter { best - it.second <= 20 }
+            tolerance > 0 -> sorted.filter { best - it.second <= tolerance }
             else -> sorted.take(1)
         }
         return pool[random.nextInt(pool.size)].first

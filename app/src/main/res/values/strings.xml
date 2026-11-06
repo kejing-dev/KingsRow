@@ -141,4 +141,8 @@
     <string name="seat_busy">Wait for this move</string>
     <string name="status_no_drag">First game: pinch a piece, then pinch a lit square. Dragging opens up from your next game.</string>
     <string name="status_busy">Wait for this move to finish.</string>
+    <string name="card_opponent">Opponent</string>
+    <string name="card_move">Move</string>
+    <string name="card_last">Last move</string>
+    <string name="card_no_progress">No capture / crowning</string>
 </resources>

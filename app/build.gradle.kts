@@ -12,8 +12,8 @@ android {
         applicationId = "io.embodit.kingsrow"
         minSdk = 35
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.1.2"
+        versionCode = 4
+        versionName = "0.1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters.add("arm64-v8a") }
@@ -37,6 +37,7 @@ android {
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
+        unitTests.all { it.testLogging { showStandardStreams = true; events("passed", "failed") } }
     }
     buildFeatures {
         compose = true

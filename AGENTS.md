@@ -11,8 +11,8 @@ Two surfaces:
   two trays (Black's on the right, Red's on the left) with 3 stacks + a spare cell, an upright seat card behind the
   far edge and a "吃了 N" card on each tray. No buttons in the volume.
 - **Control window** (`WindowContainer("KingsControl")`, Planar 600 x 640 dp so the longest page needs no scrolling;
-  first open `Placement.right(board)`, every reopen (叫回面前, pinch after the system ×) `Placement.none()` via
-  `domain/WindowPolicy`), native
+  first open and every reopen ([重开控制窗], pinch on the board after the system ×) use the same
+  `Placement.right(board)` via `domain/WindowPolicy`; the window never covers the board), native
   `TabBar` with four pages: 对局 / 新局 / 规则 / 设置 (exit with in-page confirm at the bottom of 设置).
 
 ## Rules that stay in force
@@ -70,7 +70,7 @@ force-stop that leftover app before screenshots.
 | `new "black 1"` / `new "red 3"` / `new "random 5"` · `undo` · `backturn` · `hint on|off` · `resign` · `restart` · `confirm` · `cancel` | buttons |
 | `freeze 260|off` · `hold on|off` · `seed N` | screenshot helpers |
 | `lang zh|en|system` · `sound on|off` · `volume 0-2` · `reduced on|off` · `coach on|off` · `level 1-5` | settings |
-| `page play|new|rules|settings` · `exitask` · `closepanel` · `reopen` (= pinch after ×, opens in front) · `recall` · `dump` · `evidence` | window |
+| `page play|new|rules|settings` · `exitask` · `closepanel` · `reopen` (= pinch after ×, reopens beside the board) · `recall` · `dump` · `evidence` | window |
 
 S00 = the first 0.5 s after a cold start (fallback slab + discs). Log tag `KingsRow`: `GAME`, `TURN`, `SELECT`,
 `MOVE`, `CHAIN`, `CROWN`, `AI think|move`, `ALERT`, `UNDO`, `RESULT`, `WINDOW`, `PAGE`, `OVERFLOW`, `SCENE`, `CMD`.
