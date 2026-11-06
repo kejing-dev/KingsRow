@@ -9,6 +9,7 @@ object Containers {
     const val BOARD = "KingsBoard"
     const val CONTROL = "KingsControl"
     const val CONTROL_TAG = "control"
+    const val BOARD_TAG = "board"
 }
 
 enum class Page(val stateId: String) { PLAY("S03"), NEW("S02"), RULES("S12"), SETTINGS("S11") }

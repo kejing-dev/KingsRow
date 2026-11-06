@@ -9,6 +9,7 @@ import com.pico.spatial.ui.foundation.dsl.Placement
 import com.pico.spatial.ui.foundation.dsl.SpatialAppScope
 import com.pico.spatial.ui.foundation.dsl.WindowContainer
 import com.pico.spatial.ui.foundation.dsl.WindowContainerSize
+import io.embodit.kingsrow.domain.WindowPolicy
 import io.embodit.kingsrow.ui.Containers
 import io.embodit.kingsrow.ui.board.BoardScreen
 import io.embodit.kingsrow.ui.control.ControlWindow
@@ -29,7 +30,13 @@ fun mainApp(scope: SpatialAppScope) =
             form = Form.Planar,
             defaultSize = WindowContainerSize(width = 600.dp, height = 640.dp),
             // D44 (corrected): first open and every reopen beside the board volume, so the window never covers the board.
-            placement = { Placement.right(containers.first { it.id == Containers.BOARD }) },
+            // never throws: beside the board, else beside any other open container (WindowPolicy.anchorOf, unit-tested);
+            // [重开控制窗] brings the board back first when it is closed, so the second branch is only a safety net
+            placement = {
+                android.util.Log.i("KingsRow", "PLACEMENT containers=${containers.map { it.id }}")
+                val anchor = WindowPolicy.anchorOf(containers, Containers.BOARD, Containers.CONTROL) { it.id } ?: containers.firstOrNull()
+                Placement.right(anchor ?: containers.first())
+            },
         ) {
             KingsTheme {
                 Box(Modifier.windowConstraints(minWidth = 560.dp, minHeight = 560.dp, maxWidth = 900.dp, maxHeight = 640.dp)) { ControlWindow() }

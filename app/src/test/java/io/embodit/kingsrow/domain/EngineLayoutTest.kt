@@ -118,6 +118,19 @@ class WindowPolicyTest {
         org.junit.Assert.assertEquals(WindowAnchor.RIGHT_OF_BOARD, WindowPolicy.anchor(reopen = true)) // D44 corrected: reopen beside the board too
     }
 
+    @Test fun anchorNeverThrowsWhenTheBoardIsGone() {
+        val ids = listOf("KingsBoard", "KingsControl")
+        org.junit.Assert.assertEquals("KingsBoard", WindowPolicy.anchorOf(ids, "KingsBoard", "KingsControl") { it })
+        org.junit.Assert.assertEquals(null, WindowPolicy.anchorOf(listOf("KingsControl"), "KingsBoard", "KingsControl") { it })
+        org.junit.Assert.assertEquals(null, WindowPolicy.anchorOf(emptyList<String>(), "KingsBoard", "KingsControl") { it })
+        org.junit.Assert.assertEquals("Other", WindowPolicy.anchorOf(listOf("KingsControl", "Other"), "KingsBoard", "KingsControl") { it })
+    }
+
+    @Test fun reopenWithTheBoardClosedBringsTheBoardBackFirst() {
+        org.junit.Assert.assertEquals(WindowPolicy.Reopen.PANEL, WindowPolicy.reopenAction(boardAlive = true))
+        org.junit.Assert.assertEquals(WindowPolicy.Reopen.BOARD_FIRST, WindowPolicy.reopenAction(boardAlive = false))
+    }
+
     @Test fun emulatorEyesAreChecked() {
         org.junit.Assert.assertTrue(Layout.eyes().any { it.first.startsWith("emu") })
     }

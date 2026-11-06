@@ -11,4 +11,16 @@ enum class WindowAnchor { RIGHT_OF_BOARD }
 
 object WindowPolicy {
     fun anchor(@Suppress("UNUSED_PARAMETER") reopen: Boolean = false): WindowAnchor = WindowAnchor.RIGHT_OF_BOARD
+
+    /**
+     * The container the control window is placed beside: the board volume, or (board gone, e.g. the user closed the
+     * volume with its system ×) any other open container, or null. Never throws (QA #3: `first {}` could crash).
+     */
+    fun <T> anchorOf(containers: List<T>, boardId: String, controlId: String, id: (T) -> String): T? =
+        containers.firstOrNull { id(it) == boardId } ?: containers.firstOrNull { id(it) != controlId }
+
+    /** What [重开控制窗] does: reopen the panel beside the board, or bring the board back first when it is closed. */
+    enum class Reopen { PANEL, BOARD_FIRST }
+
+    fun reopenAction(boardAlive: Boolean): Reopen = if (boardAlive) Reopen.PANEL else Reopen.BOARD_FIRST
 }

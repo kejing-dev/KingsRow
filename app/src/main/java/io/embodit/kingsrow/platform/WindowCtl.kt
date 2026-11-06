@@ -27,6 +27,12 @@ class WindowCtl {
         private set
     var panelState by mutableStateOf("never")
         private set
+    /** The board volume's composition is alive (attach / detach). */
+    var boardAlive by mutableStateOf(false)
+        private set
+    /** Set when [重开控制窗] found the board closed: 0 none, 1 reopening the board, 2 could not reopen it. */
+    var boardNotice by mutableStateOf(0)
+        private set
 
     private var open: (() -> Unit)? = null
     private var close: (() -> Unit)? = null
@@ -44,7 +50,12 @@ class WindowCtl {
         this.open = open
         this.close = close
         this.closeBoard = closeBoard
+        boardAlive = true
+        boardNotice = 0
     }
+
+    /** Debug: close only the board volume (like its system ×). */
+    fun closeBoardOnly() { Log.i(TAG, "WINDOW close board (debug)"); closeBoard?.invoke() }
 
     /** D26 / D44 exit: close both containers (control window, then the board volume). */
     fun closeAll() {
@@ -55,6 +66,7 @@ class WindowCtl {
 
     fun detach() {
         open = null; close = null; closeBoard = null
+        boardAlive = false
         gate.cancel()
         main.removeCallbacks(watchdog)
         runCatching { hmd?.stop() }
@@ -74,7 +86,13 @@ class WindowCtl {
      * Settings [重开控制窗]: close, wait for ON_DESTROY, open again beside the board (Placement.right, D44 corrected;
      * the copy only says "next to the board"). No level gate wait: Shared Space gives no head pose.
      */
-    fun recall() {
+    fun recall(reopenBoard: () -> Unit = {}) {
+        if (WindowPolicy.reopenAction(boardAlive) == WindowPolicy.Reopen.BOARD_FIRST) {
+            // the board volume was closed: the panel has nothing to sit beside, so bring the board back instead
+            Log.i(TAG, "WINDOW recall: board closed -> reopen board")
+            boardNotice = if (runCatching(reopenBoard).onFailure { Log.w(TAG, "WINDOW reopen board failed: $it") }.isSuccess) 1 else 2
+            return
+        }
         if (panelState == "never" || panelState == "ON_DESTROY") openNow("recall", null)
         else if (!recallPending) { recallPending = true; Log.i(TAG, "WINDOW recall close"); close?.invoke() }
     }

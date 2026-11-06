@@ -109,6 +109,7 @@ class DebugCommandReceiver : BroadcastReceiver() {
             "page" -> Ui.page = when (a) { "new" -> Page.NEW; "rules" -> Page.RULES; "settings" -> Page.SETTINGS; else -> Page.PLAY }
             "exitask" -> { Ui.page = Page.SETTINGS; Ui.exitConfirm = true }
             "closepanel" -> graph.window.closeNow()
+            "closeboard" -> graph.window.closeBoardOnly()
             "reopen" -> graph.window.reopen("debug")
             "recall" -> graph.window.recall()
             "dump", "state" -> Log.i(TAG, "DUMP ${flow.dump()} page=${Ui.page} window=${graph.window.panelState}")

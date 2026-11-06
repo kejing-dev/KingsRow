@@ -138,4 +138,6 @@
     <string name="card_move">第几步</string>
     <string name="card_last">上一步</string>
     <string name="card_no_progress">无吃无升</string>
+    <string name="board_reopening">棋台被关掉了，先把棋台重新打开。需要的话再点一次重开控制窗。</string>
+    <string name="board_closed_fail">棋台被关掉了。退出后从应用列表重新打开西洋跳棋。</string>
 </resources>

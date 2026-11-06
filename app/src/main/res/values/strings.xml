@@ -145,4 +145,6 @@
     <string name="card_move">Move</string>
     <string name="card_last">Last move</string>
     <string name="card_no_progress">No capture</string>
+    <string name="board_reopening">The board was closed, so it is coming back first. Then reopen the panel if you need to.</string>
+    <string name="board_closed_fail">The board was closed. Quit and start Kings Row again from the app library.</string>
 </resources>

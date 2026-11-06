@@ -161,8 +161,10 @@ private fun PlayPage(state: PlayState, settings: Settings, graph: Graph) {
         // short page: centred, big main button (D44: blank <= 25 % of the window)
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
             PageTitle(stringResource(R.string.tab_play), "play")
+            RulesDiagram(120.dp)
             Txt(stringResource(R.string.play_empty), "play/empty", style = PicoTheme.typography.titleMedium, maxLines = 3)
             PrimaryButton(stringResource(R.string.btn_new_game), "play/new", onClick = { Ui.page = Page.NEW }, modifier = Modifier.fillMaxWidth().height(72.dp))
+            SecondaryButton(stringResource(R.string.tab_rules), "play/rules", icon = R.drawable.ic_tab_rules, onClick = { Ui.page = Page.RULES }, modifier = Modifier.fillMaxWidth().height(56.dp))
         }
         return
     }
@@ -182,12 +184,15 @@ private fun PlayPage(state: PlayState, settings: Settings, graph: Graph) {
             } else Spacer(Modifier.weight(1f))
             Txt(stringResource(R.string.score, state.trays[cfg.human].score, state.trays[cfg.ai].score), "play/score", style = PicoTheme.typography.titleMedium, color = PicoTheme.colorScheme.labelPrimary)
         }
-        StatusLine(state)
-        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+        if (state.result == null) StatusLine(state)
+        // the game card stays on screen in every state; a confirmation / the result sits under it, the pair centred,
+        // so no state leaves a band of empty glass > 25 % of the window (D44, QA #3 q3-1 / q3-2)
+        Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)) {
+            GameCard(state)
             when {
                 state.confirm == ConfirmKind.RESIGN_OR_RESTART -> ConfirmBlock(graph)
                 state.result != null -> ResultBlock(state, graph)
-                else -> GameCard(state)
+                else -> Unit
             }
         }
         if (state.result == null && state.confirm == null) {
@@ -364,9 +369,9 @@ private fun RulesPage(state: PlayState, graph: Graph) {
         // every line fits the 640 dp window without scrolling (D44 首屏); the scroll stays only as a safety net
         val welcome = state.phase == Phase.WELCOME
         // without the pinned [开始] the page has room: bigger picture and spacing so the blank stays <= 25 % (D44)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(if (welcome) 4.dp else 10.dp)) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             PageTitle(stringResource(if (welcome) R.string.welcome_title else R.string.rules_title), "rules")
-            RulesDiagram(if (welcome) 76.dp else 120.dp)
+            RulesDiagram(120.dp)
             listOf(R.string.rules_1, R.string.rules_2, R.string.rules_3, R.string.rules_4).forEach { Txt(stringResource(it), "rules/line", style = PicoTheme.typography.bodyMedium, maxLines = 3) }
             Spacer(Modifier.height(2.dp))
             Txt(stringResource(R.string.rules_mistakes), "rules/mistakes", style = PicoTheme.typography.titleSmall)
@@ -458,8 +463,14 @@ private fun SettingsPage(settings: Settings, graph: Graph) {
             }, modifier = Modifier.weight(1f))
         }
         Spacer(Modifier.height(4.dp))
-        SecondaryButton(stringResource(R.string.settings_recall), "settings/recall", icon = R.drawable.ic_recall, onClick = { graph.window.recall() }, modifier = Modifier.fillMaxWidth())
-        Txt(stringResource(R.string.settings_recall_hint), "settings/recall-hint", style = PicoTheme.typography.bodySmall, color = PicoTheme.colorScheme.labelSecondary, maxLines = 2)
+        SecondaryButton(stringResource(R.string.settings_recall), "settings/recall", icon = R.drawable.ic_recall,
+            onClick = { graph.window.recall(reopenBoard = { navigator.openWindowContainer(Containers.BOARD, Containers.BOARD_TAG) }) }, modifier = Modifier.fillMaxWidth())
+        val notice = graph.window.boardNotice
+        Txt(
+            stringResource(when (notice) { 1 -> R.string.board_reopening; 2 -> R.string.board_closed_fail; else -> R.string.settings_recall_hint }),
+            "settings/recall-hint", style = PicoTheme.typography.bodySmall,
+            color = if (notice == 2) KingsColors.ErrorText else PicoTheme.colorScheme.labelSecondary, maxLines = 2,
+        )
         Txt(stringResource(R.string.settings_about_text, BuildConfig.VERSION_NAME), "settings/about-text", style = PicoTheme.typography.bodySmall, color = PicoTheme.colorScheme.labelSecondary, maxLines = 2)
         Spacer(Modifier.weight(1f))
         // D26: quit is the last row; the confirmation opens right here (no second panel).
