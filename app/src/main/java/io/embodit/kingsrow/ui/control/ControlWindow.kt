@@ -364,9 +364,9 @@ private fun RulesPage(state: PlayState, graph: Graph) {
         // every line fits the 640 dp window without scrolling (D44 首屏); the scroll stays only as a safety net
         val welcome = state.phase == Phase.WELCOME
         // without the pinned [开始] the page has room: bigger picture and spacing so the blank stays <= 25 % (D44)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(if (welcome) 4.dp else 7.dp)) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(if (welcome) 4.dp else 10.dp)) {
             PageTitle(stringResource(if (welcome) R.string.welcome_title else R.string.rules_title), "rules")
-            RulesDiagram(if (welcome) 76.dp else 104.dp)
+            RulesDiagram(if (welcome) 76.dp else 120.dp)
             listOf(R.string.rules_1, R.string.rules_2, R.string.rules_3, R.string.rules_4).forEach { Txt(stringResource(it), "rules/line", style = PicoTheme.typography.bodyMedium, maxLines = 3) }
             Spacer(Modifier.height(2.dp))
             Txt(stringResource(R.string.rules_mistakes), "rules/mistakes", style = PicoTheme.typography.titleSmall)

@@ -144,5 +144,5 @@
     <string name="card_opponent">Opponent</string>
     <string name="card_move">Move</string>
     <string name="card_last">Last move</string>
-    <string name="card_no_progress">No capture / crowning</string>
+    <string name="card_no_progress">No capture</string>
 </resources>
