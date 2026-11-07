@@ -24,6 +24,7 @@ import io.embodit.kingsrow.domain.Sq
 import io.embodit.kingsrow.domain.Timeline
 import io.embodit.kingsrow.domain.V3
 import io.embodit.kingsrow.platform.TAG
+import io.embodit.kingsrow.ui.board.input.GazeTargets
 import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.min
@@ -85,41 +86,51 @@ internal class BoardScene {
     }
 
     /** A man (one disc) or a king (two discs); [collider] is null for animation copies. */
-    private inner class PieceView(name: String, r: SceneResources, withCollider: Boolean) {
+    /**
+     * A man (one disc) or a king (two discs). Pickable pieces (board-input template / D50): the hit root `pc:<sq>` is
+     * the collider parent with Collision + Interactable + system HoverEffect, and the visible disc meshes hang below
+     * it, so the system highlight is drawn on the piece itself and a hit on any mesh resolves up to `pc:<sq>`.
+     * Animation copies (mover, flyers) get no components.
+     */
+    private inner class PieceView(name: String, r: SceneResources, private val pickable: Boolean) {
         val holder = Entity().apply { setName(name) }
+        private val hitRoot = Entity().apply { setName(if (pickable) "pc:-1" else "$name:root") }
         val lower = Disc("$name:d0", r)
         val upper = Disc("$name:d1", r)
-        val collider: Entity? = if (withCollider) Entity().apply {
-            setName("pc:-1")
-            components.set(CollisionComponent(collisionShape = listOf(r.manShape), physicsMaterial = r.physics))
-            components.set(InteractableComponent())
-        } else null
         private var king = false
-        private var shapeKing = false
 
         init {
-            holder.addChild(lower.holder)
-            upper.holder.transform().setPosition(Vector3(0f, Layout.PIECE_H, 0f))
+            holder.addChild(hitRoot)
+            hitRoot.addChild(lower.holder)
             upper.holder.enabled = false
-            holder.addChild(upper.holder)
-            collider?.let { c -> c.transform().setPosition(Vector3(0f, Layout.PIECE_H / 2, 0f)); holder.addChild(c) }
+            hitRoot.addChild(upper.holder)
+            if (pickable) GazeTargets.install(hitRoot, r.manShape, r.physics)
+            arrange()
+        }
+
+        /** The collider box is centred on the hit root: one disc high for a man, two for a king. */
+        private fun arrange() {
+            val h = Layout.PIECE_H
+            hitRoot.transform().setPosition(Vector3(0f, if (king) h else h / 2, 0f))
+            lower.holder.transform().setPosition(Vector3(0f, if (king) -h else -h / 2, 0f))
+            upper.holder.transform().setPosition(Vector3(0f, if (king) 0f else h / 2, 0f))
         }
 
         fun look(side: Int, isKing: Boolean) {
             lower.look(side, false)
             upper.look(side, true)
-            if (isKing != king) { king = isKing; upper.holder.enabled = isKing }
-            collider?.let { c ->
-                if (isKing != shapeKing) {
-                    shapeKing = isKing
-                    val r = res ?: return@let
-                    c.components.set(CollisionComponent(collisionShape = listOf(if (isKing) r.kingShape else r.manShape), physicsMaterial = r.physics))
-                    c.transform().setPosition(Vector3(0f, if (isKing) Layout.PIECE_H else Layout.PIECE_H / 2, 0f))
+            if (isKing != king) {
+                king = isKing
+                upper.holder.enabled = isKing
+                arrange()
+                if (pickable) {
+                    val r = res ?: return
+                    hitRoot.components.set(CollisionComponent(collisionShape = listOf(if (isKing) r.kingShape else r.manShape), physicsMaterial = r.physics))
                 }
             }
         }
 
-        fun square(sq: Int) { collider?.setName("pc:$sq") }
+        fun square(sq: Int) { if (pickable) hitRoot.setName("pc:$sq") }
     }
 
     private val pieces = HashMap<Int, PieceView>()
@@ -143,6 +154,7 @@ internal class BoardScene {
     private val hintRings = ArrayList<ModelEntity>()
     private val coachRings = ArrayList<ModelEntity>()
     private var crownGlow: ModelEntity? = null
+    private var hoverRing: ModelEntity? = null
     private var seat: Entity? = null
     private val trayCards = HashMap<Int, Entity>()
 
@@ -206,14 +218,16 @@ internal class BoardScene {
             transform().setPosition(Vector3(0f, 0.0003f, 0f))
             transform().setQuaternion(Quat(Vector3(1f, 0f, 0f), (-PI / 2).toFloat()))
         })
-        // 32 dark-square pads (design input.rule: thin boxes 5.5 x 0.3 x 5.5 cm, not overlapping)
+        // 32 dark squares (board-input template「可见落点标记」, D50 再犯): a full-square collider parent `sq:<i>` (5.5 cm,
+        // click area unchanged) with Collision + Interactable + system HoverEffect, and a visible 70 % rounded marker
+        // `mark:<i>`, 1.5 mm proud of the board and one shade darker than the walnut square, for the highlight to draw on.
         for (sq in Sq.DARK) {
-            boardRoot.addChild(Entity().apply {
-                setName("sq:$sq")
-                place(this, Layout.square(sq, 0.0015f))
-                components.set(CollisionComponent(collisionShape = listOf(r.squareShape), physicsMaterial = r.physics))
-                components.set(InteractableComponent())
-            })
+            val pad = Entity().apply { setName("sq:$sq"); place(this, Layout.square(sq, Layout.MARK_H)) }
+            val mark = ModelEntity(r.marker, r.markerMat).apply {
+                setName("mark:$sq")
+                transform().setPosition(Vector3(0f, -Layout.MARK_H / 2, 0f))
+            }
+            boardRoot.addChild(GazeTargets.install(pad, r.squareShape, r.physics, mark))
         }
         // trays
         for (side in listOf(Side.BLACK, Side.RED)) {
@@ -256,9 +270,11 @@ internal class BoardScene {
         repeat(8) { i -> frames += frame(r, r.orange, "frame:$i").also { it.enabled = false; boardRoot.addChild(it) } }
         redFrame = frame(r, r.red, "redFrame").also { it.enabled = false; boardRoot.addChild(it) }
         repeat(12) { i -> pulses += ModelEntity(r.ring, r.white).apply { setName("pulse:$i"); enabled = false }.also { boardRoot.addChild(it) } }
-        repeat(2) { i -> lastMarks += ModelEntity(r.unitBox, r.amberSoft).apply { setName("last:$i"); enabled = false; transform().setScaleVector(Vector3(0.058f, 0.0006f, 0.058f)) }.also { boardRoot.addChild(it) } }
+        // last move: a pale amber ring round the square (a full plate would cover the square marker and its hover highlight)
+        repeat(2) { i -> lastMarks += ModelEntity(r.ring, r.amberSoft).apply { setName("last:$i"); enabled = false; transform().setScaleVector(Vector3(1.12f, 1f, 1.12f)) }.also { boardRoot.addChild(it) } }
         repeat(2) { i -> hintRings += ModelEntity(r.ring, r.amber).apply { setName("hint:$i"); enabled = false }.also { boardRoot.addChild(it) } }
         repeat(12) { i -> coachRings += ModelEntity(r.ring, r.coach).apply { setName("coach:$i"); enabled = false; transform().setScaleVector(Vector3(1.05f, 1f, 1.05f)) }.also { boardRoot.addChild(it) } }
+        hoverRing = ModelEntity(r.ring, r.selWhite).apply { setName("hoverRing"); enabled = false; transform().setScaleVector(Vector3(1.06f, 1f, 1.06f)) }.also { boardRoot.addChild(it) }
         crownGlow = ModelEntity(r.ring, r.gold).apply { setName("crownGlow"); enabled = false }.also { boardRoot.addChild(it) }
         mover = PieceView("mover", r, false).also { it.holder.enabled = false; boardRoot.addChild(it.holder) }
         crownFlyer = Disc("crownFlyer", r).also { it.holder.enabled = false; boardRoot.addChild(it.holder) }
@@ -305,6 +321,21 @@ internal class BoardScene {
     // ------------------------------------------------------------------ drag
 
     fun beginDrag(sq: Int) { dragSq = sq; dragOffset = V3(0f, 0f, 0f) }
+
+    /** Total drag since the press (metres, volume axes; board-input template) -> board-local offset. */
+    fun dragTo(dx: Float, dy: Float, dz: Float) {
+        if (dragSq == null) return
+        val d = Layout.rotX(V3(dx, dy, dz), -Layout.THETA)
+        dragOffset = V3(d.x, 0f, d.z)
+    }
+
+    private var hoverSq: Int? = null
+    private var hoverAt = 0L
+
+    /** Hover hint (D50 补): shown until another target or 1.5 s without a refresh; never changes game state. */
+    fun hover(sq: Int?) {
+        if (sq != null) { hoverSq = sq; hoverAt = SystemClock.uptimeMillis() } else if (hoverSq != null) hoverSq = null
+    }
 
     /** [scene] delta in metres (volume axes) -> board-local offset. */
     fun dragBy(dx: Float, dy: Float, dz: Float) {
@@ -476,23 +507,23 @@ internal class BoardScene {
                 val side = Piece.side(st.display[sel])
                 val chain = st.phase == Phase.CHAIN
                 ring.components[ModelComponent::class.java]?.materials?.set(0, if (chain) r.green else if (side == Side.BLACK) r.selBlack else r.selRed)
-                place(ring, Layout.square(sel, 0.0016f))
+                place(ring, Layout.square(sel, 0.0026f))
                 ring.enabled = true
-                selRingInner?.let { inner -> inner.enabled = !chain && side == Side.BLACK; place(inner, Layout.square(sel, 0.0018f)) }
+                selRingInner?.let { inner -> inner.enabled = !chain && side == Side.BLACK; place(inner, Layout.square(sel, 0.0028f)) }
             } else { ring.enabled = false; selRingInner?.enabled = false }
         }
         val slide = if (quiet) st.slideTargets.toList() else emptyList()
-        dots.forEachIndexed { i, d -> val sq = slide.getOrNull(i); if (sq != null) { place(d, Layout.square(sq, 0.0012f)); d.enabled = true } else d.enabled = false }
+        dots.forEachIndexed { i, d -> val sq = slide.getOrNull(i); if (sq != null) { place(d, Layout.square(sq, 0.0026f)); d.enabled = true } else d.enabled = false }
         val lands = if (quiet) st.jumpTargets.toList() else emptyList()
-        landRings.forEachIndexed { i, d -> val sq = lands.getOrNull(i); if (sq != null) { place(d, Layout.square(sq, 0.0014f)); d.enabled = true } else d.enabled = false }
+        landRings.forEachIndexed { i, d -> val sq = lands.getOrNull(i); if (sq != null) { place(d, Layout.square(sq, 0.0024f)); d.enabled = true } else d.enabled = false }
         val framed = if (quiet) st.framed.toList() else emptyList()
-        frames.forEachIndexed { i, f -> val sq = framed.getOrNull(i); if (sq != null) { place(f, Layout.square(sq, 0.0012f)); f.enabled = true } else f.enabled = false }
+        frames.forEachIndexed { i, f -> val sq = framed.getOrNull(i); if (sq != null) { place(f, Layout.square(sq, 0.0022f)); f.enabled = true } else f.enabled = false }
 
         // alert: the tapped square's red frame flashes for 300 ms (x2), the pieces that can jump pulse white twice
         val al = st.alert
         val at = al?.let { now - it.at } ?: Long.MAX_VALUE
         redFrame?.let { f ->
-            if (al != null && al.kind != io.embodit.kingsrow.domain.AlertKind.BUSY && al.kind != io.embodit.kingsrow.domain.AlertKind.NO_DRAG && at < 600 && (at / 150) % 2 == 0L) { place(f, Layout.square(al.square, 0.002f)); f.enabled = true } else f.enabled = false
+            if (al != null && al.kind != io.embodit.kingsrow.domain.AlertKind.BUSY && al.kind != io.embodit.kingsrow.domain.AlertKind.NO_DRAG && at < 600 && (at / 150) % 2 == 0L) { place(f, Layout.square(al.square, 0.0028f)); f.enabled = true } else f.enabled = false
         }
         val pulseList = if (al != null && at < 1400) al.pulse.toList() else emptyList()
         pulses.forEachIndexed { i, p ->
@@ -509,7 +540,7 @@ internal class BoardScene {
         val lm = st.snap.lastMove.takeIf { quiet && st.phase != Phase.CHAIN }
         lastMarks.forEachIndexed { i, m ->
             val sq = if (lm == null) null else if (i == 0) lm.from else lm.to
-            if (sq != null) { place(m, Layout.square(sq, 0.0004f)); m.enabled = true } else m.enabled = false
+            if (sq != null) { place(m, Layout.square(sq, 0.0024f)); m.enabled = true } else m.enabled = false
         }
 
         // hint: amber rings on the piece and its first landing (D19 toggle)
@@ -519,9 +550,14 @@ internal class BoardScene {
             if (sq != null) {
                 val k = 1.1f + 0.06f * sin(clock * 4f)
                 ring.transform().setScaleVector(Vector3(k, 1f, k))
-                place(ring, Layout.square(sq, if (i == 0) pieceTop(sq) + 0.003f else 0.002f))
+                place(ring, Layout.square(sq, if (i == 0) pieceTop(sq) + 0.003f else 0.0026f))
                 ring.enabled = true
             } else ring.enabled = false
+        }
+
+        hoverRing?.let { h ->
+            val sq = hoverSq
+            if (sq != null && quiet && now - hoverAt < 1500) { place(h, Layout.square(sq, pieceTop(sq) + 0.0025f)); h.enabled = true } else h.enabled = false
         }
 
         // first-game coaching: the pieces that can move glow softly
@@ -531,7 +567,7 @@ internal class BoardScene {
             if (sq != null) {
                 val k = 1.0f + 0.05f * sin(clock * 3f)
                 ring.transform().setScaleVector(Vector3(k, 1f, k))
-                place(ring, Layout.square(sq, 0.0013f))
+                place(ring, Layout.square(sq, 0.0023f))
                 ring.enabled = true
             } else ring.enabled = false
         }

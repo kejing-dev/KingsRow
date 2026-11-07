@@ -29,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -113,22 +115,15 @@ fun ControlWindow() {
         }
     }
 
-    TabBar(followViewpoints = setOf(ViewPoint.Front, ViewPoint.Left)) {
-        listOf(
-            Triple(Page.PLAY, R.drawable.ic_tab_play, R.string.tab_play),
-            Triple(Page.NEW, R.drawable.ic_tab_new, R.string.tab_new),
-            Triple(Page.RULES, R.drawable.ic_tab_rules, R.string.tab_rules),
-            Triple(Page.SETTINGS, R.drawable.ic_tab_settings, R.string.tab_settings),
-        ).forEach { (page, icon, label) ->
-            item(
-                selected = Ui.page == page,
-                onClick = { Ui.page = page; Ui.pickedByUser = true },
-                // the TabBar is its own system window: re-provide the localized theme so its labels follow the language
-                mainContent = { KingsTheme { Icon(painter = painterResource(icon), contentDescription = stringResource(label)) } },
-                supportContent = { KingsTheme { Txt(stringResource(label), "tabbar/${page.name}", style = PicoTheme.typography.labelMedium) } },
-            )
-        }
-    }
+    // Tab labels are taken here, in the app's own language (KingsTheme above), and handed to the system TabBar window
+    // as plain strings: resources read inside the tab bar window would follow the system language (gate tabbar-lang).
+    val tabs = listOf(
+        Triple(Page.PLAY, R.drawable.ic_tab_play, stringResource(R.string.tab_play)),
+        Triple(Page.NEW, R.drawable.ic_tab_new, stringResource(R.string.tab_new)),
+        Triple(Page.RULES, R.drawable.ic_tab_rules, stringResource(R.string.tab_rules)),
+        Triple(Page.SETTINGS, R.drawable.ic_tab_settings, stringResource(R.string.tab_settings)),
+    )
+    Tabs(tabs)
 }
 
 @Composable
@@ -138,19 +133,6 @@ private fun PageTitle(text: String, tag: String) {
     }
 }
 
-@Composable
-internal fun levelName(level: Int): String = stringResource(
-    when (level) { 1 -> R.string.level_1; 2 -> R.string.level_2; 3 -> R.string.level_3; 4 -> R.string.level_4; else -> R.string.level_5 },
-)
-
-@Composable
-internal fun levelSub(level: Int): String = stringResource(
-    when (level) { 1 -> R.string.level_1_sub; 2 -> R.string.level_2_sub; 3 -> R.string.level_3_sub; 4 -> R.string.level_4_sub; else -> R.string.level_5_sub },
-)
-
-@Composable
-private fun colorName(side: Int): String = stringResource(if (side == Side.BLACK) R.string.color_black else R.string.color_red)
-
 // ------------------------------------------------------------------ Play
 
 @Composable
@@ -158,8 +140,8 @@ private fun PlayPage(state: PlayState, settings: Settings, graph: Graph) {
     val flow = graph.flow
     val cfg = state.config
     if (cfg == null || state.phase in setOf(Phase.SETUP, Phase.WELCOME, Phase.LOADING)) {
-        // short page: centred, big main button (D44: blank <= 25 % of the window)
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
+        // short page: spread over the whole window, big main button (build.md: blank above + below <= 25 %, no inner band > 20 %)
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween, horizontalAlignment = Alignment.CenterHorizontally) {
             PageTitle(stringResource(R.string.tab_play), "play")
             RulesDiagram(120.dp)
             Txt(stringResource(R.string.play_empty), "play/empty", style = PicoTheme.typography.titleMedium, maxLines = 3)
@@ -369,7 +351,7 @@ private fun RulesPage(state: PlayState, graph: Graph) {
         // every line fits the 640 dp window without scrolling (D44 首屏); the scroll stays only as a safety net
         val welcome = state.phase == Phase.WELCOME
         // without the pinned [开始] the page has room: bigger picture and spacing so the blank stays <= 25 % (D44)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             PageTitle(stringResource(if (welcome) R.string.welcome_title else R.string.rules_title), "rules")
             RulesDiagram(120.dp)
             listOf(R.string.rules_1, R.string.rules_2, R.string.rules_3, R.string.rules_4).forEach { Txt(stringResource(it), "rules/line", style = PicoTheme.typography.bodyMedium, maxLines = 3) }
@@ -392,7 +374,7 @@ private fun RulesDiagram(cell: androidx.compose.ui.unit.Dp) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         for (i in 0 until 4) {
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Canvas(Modifier.size(cell)) { diagramCell(i) }
+                Canvas(Modifier.size(cell).semantics { contentDescription = labels[i] }) { diagramCell(i) }
                 Txt(labels[i], "rules/diagram$i", style = PicoTheme.typography.labelMedium, maxLines = 1)
             }
         }
@@ -464,7 +446,7 @@ private fun SettingsPage(settings: Settings, graph: Graph) {
         }
         Spacer(Modifier.height(4.dp))
         SecondaryButton(stringResource(R.string.settings_recall), "settings/recall", icon = R.drawable.ic_recall,
-            onClick = { graph.window.recall(reopenBoard = { navigator.openWindowContainer(Containers.BOARD, Containers.BOARD_TAG) }) }, modifier = Modifier.fillMaxWidth())
+            onClick = { graph.window.recall() }, modifier = Modifier.fillMaxWidth())
         val notice = graph.window.boardNotice
         Txt(
             stringResource(when (notice) { 1 -> R.string.board_reopening; 2 -> R.string.board_closed_fail; else -> R.string.settings_recall_hint }),
@@ -498,4 +480,34 @@ internal fun exitApp(context: Context, navigator: SpatialNavigator, graph: Graph
         am.appTasks.forEach { runCatching { it.finishAndRemoveTask() } }
     }
     Handler(Looper.getMainLooper()).postDelayed({ exitProcess(0) }, 400)
+}
+
+// ------------------------------------------------------------------ names (kept away from the TabBar block)
+
+@Composable
+internal fun levelName(level: Int): String = stringResource(
+    when (level) { 1 -> R.string.level_1; 2 -> R.string.level_2; 3 -> R.string.level_3; 4 -> R.string.level_4; else -> R.string.level_5 },
+)
+
+@Composable
+internal fun levelSub(level: Int): String = stringResource(
+    when (level) { 1 -> R.string.level_1_sub; 2 -> R.string.level_2_sub; 3 -> R.string.level_3_sub; 4 -> R.string.level_4_sub; else -> R.string.level_5_sub },
+)
+
+@Composable
+private fun colorName(side: Int): String = stringResource(if (side == Side.BLACK) R.string.color_black else R.string.color_red)
+
+/** The native TabBar (D8). It gets ready-made labels; nothing below reads resources (they would follow the system language). */
+@Composable
+private fun Tabs(tabs: List<Triple<Page, Int, String>>) {
+    TabBar(followViewpoints = setOf(ViewPoint.Front, ViewPoint.Left)) {
+        tabs.forEach { (page, icon, label) ->
+            item(
+                selected = Ui.page == page,
+                onClick = { Ui.page = page; Ui.pickedByUser = true },
+                mainContent = { Icon(painter = painterResource(icon), contentDescription = label) },
+                supportContent = { Txt(label, "tabbar/${page.name}", style = PicoTheme.typography.labelMedium) },
+            )
+        }
+    }
 }

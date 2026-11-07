@@ -36,6 +36,10 @@ object Layout {
     const val PIECE_R = 0.023f
     const val PIECE_H = 0.010f
     const val LIFT_SELECTED = 0.008f
+    /** Height of the visible square markers (board-input「可见落点标记」); board marks sit above it. */
+    const val MARK_H = 0.0015f
+    /** Marker side: 70 % of the square. */
+    const val MARK_W = PITCH * 0.7f
 
     const val TRAY_X = 0.33f
     const val TRAY_Z = 0.14f

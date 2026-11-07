@@ -428,7 +428,8 @@ class GameFlow(
 
     private fun playSounds(a: MoveAnim) {
         for (i in a.steps.indices) {
-            val at = Timeline.stepStart(i, a.jumps, a.reduced)
+            // the sound plays on the frame the piece lands (D51), not when it lifts off
+            val at = Timeline.stepStart(i, a.jumps, a.reduced) + Timeline.stepDuration(a.jumps, a.reduced)
             sideJobs += scope.launch { delay(at); onSound(if (a.jumps) Sound.JUMP else Sound.SLIDE) }
             if (a.jumps) sideJobs += scope.launch { delay(Timeline.captureLift(i, a.reduced) + if (a.reduced) 0 else Timeline.CAPTURE_FLY_MS); onSound(Sound.TRAY) }
         }

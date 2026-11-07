@@ -48,11 +48,13 @@ internal class SceneResources private constructor() {
     lateinit var cap: MeshResource; private set
     lateinit var unitBox: MeshResource; private set
     lateinit var ring: MeshResource; private set
+    lateinit var marker: MeshResource; private set
     lateinit var dot: MeshResource; private set
 
     lateinit var oak: Material; private set
     lateinit var oakDark: Material; private set
     lateinit var faceMat: Material; private set
+    lateinit var markerMat: Material; private set
     lateinit var ebony: Material; private set
     lateinit var wine: Material; private set
     lateinit var capBlackMan: Material; private set
@@ -86,7 +88,7 @@ internal class SceneResources private constructor() {
         val masked = listOf("capBlackMan" to capBlackMan, "capBlackKing" to capBlackKing, "capRedMan" to capRedMan, "capRedKing" to capRedKing)
         masked.firstOrNull { it.second === m }?.let { return it.first to "MASKED" }
         val opaque = listOf(
-            "oak" to oak, "oakDark" to oakDark, "faceMat" to faceMat, "ebony" to ebony, "wine" to wine,
+            "oak" to oak, "oakDark" to oakDark, "faceMat" to faceMat, "markerMat" to markerMat, "ebony" to ebony, "wine" to wine,
             "selBlack" to selBlack, "selWhite" to selWhite, "selRed" to selRed, "blue" to blue, "orange" to orange, "red" to red,
             "green" to green, "white" to white, "amber" to amber, "amberSoft" to amberSoft, "gold" to gold, "coach" to coach,
         )
@@ -133,6 +135,9 @@ internal class SceneResources private constructor() {
                 // gate:allow geometry tray floor / rims and the thin frame bars of the board marks (design assets "托盘 程序化")
                 async(io) { r.unitBox = MeshResource.createBox(Vector3(1f, 1f, 1f), cornerRadius = 0f).keep() },
                 async(io) { r.ring = MeshResource.createTorus(outerRingRadius = 0.027f, innerRingRadius = 0.0235f).keep() },
+                // gate:allow geometry visible square markers that carry the system hover highlight (board-input template, D50)
+                async(io) { r.marker = MeshResource.createBox(Vector3(Layout.MARK_W, Layout.MARK_H, Layout.MARK_W), cornerRadius = 0.0007f).keep() },
+                async(io) { r.markerMat = pbr(Color(0xFF4A311C), roughness = 0.5f).keep() },
                 // gate:allow geometry blue target dot Ø1.6 cm, an abstract board mark (design theme.boardMarks)
                 async(io) { r.dot = MeshResource.createCylinder(radius = 0.008f, height = 0.002f).keep() },
                 async(io) { r.squareShape = ShapeResource.createBox(Vector3(0.055f, 0.003f, 0.055f)).keep() },

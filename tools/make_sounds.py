@@ -162,31 +162,8 @@ if '--check' in sys.argv:
     sys.exit(0)
 
 
-# select: a very light tick of a fingertip on a disc
-write('select', lowpass(0.8 * mode(1250, 0.008, 0.05) + 0.3 * mode(2300, 0.004, 0.05), 3000, 1), -3)
-
-# slide: a disc pushed one square over the board (felt-free wood scrape + a soft set-down), three variants
-for v, seed in ((1, 21), (2, 22), (3, 23)):
-    r = random.Random(seed)
-    x = silence(0.26)
-    x = place(x, 0.5 * swish(0.18, 380 + 40 * v, 900 + 60 * v, r, attack=0.04), 0.0)
-    x = place(x, knock(0.8, 0.35, r, seconds=0.07), 0.17)
-    write('slide' if v == 1 else f'slide_{v}', x, -1)
-
-# jump: the hop over the enemy piece, a hollow "dong" of wood on wood, three variants
-for v, seed in ((1, 31), (2, 32), (3, 33)):
-    r = random.Random(seed)
-    x = silence(0.3)
-    x = place(x, 0.35 * swish(0.16, 500, 1300, r, attack=0.03), 0.0)
-    x = place(x, 0.9 * mode(330 * (1 + 0.04 * v), 0.05, 0.2) + 0.5 * mode(720 * (1 + 0.03 * v), 0.03, 0.2), 0.12)
-    write('jump' if v == 1 else f'jump_{v}', x, -1)
-
-# tray: a captured disc landing in the wooden tray, a short "da", three variants
-for v, seed in ((1, 41), (2, 42), (3, 43)):
-    write('tray' if v == 1 else f'tray_{v}', knock(1.0, 0.45 + 0.05 * v, random.Random(seed), seconds=0.09), -1)
-
-# crown: one xylophone note ("ding")
-write('crown', note(1046.5, 0.7, 0.35, partials=((1, 1.0), (3.9, 0.12), (9.2, 0.03)), attack=0.003), -1)
+# v0.1.5 (profile D51): the physical sounds (slide / jump / tray / crown) are CC0 recordings now, see
+# tools/import_sounds.py; select is silent. Only the UI cues below are synthesized.
 
 # bump: illegal / must-jump soft knock
 write('bump', lowpass(0.9 * mode(420, 0.025, 0.12) + 0.3 * mode(860, 0.012, 0.12), 1800, 1), -2)

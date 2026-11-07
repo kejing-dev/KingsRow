@@ -27,6 +27,23 @@ def load(name):
         return np.frombuffer(w.readframes(w.getnframes()), dtype="<i2").astype(float) / 32768
 
 
+def rapid(out):
+    """D51: the same event pressed 5 times quickly (120 ms apart): each new one stops the previous (SoundPlayer)."""
+    mix = np.zeros(int(RATE * 1.5))
+    names = ["slide", "slide_2", "slide_3", "slide", "slide_2"]
+    for k, n in enumerate(names):
+        x = load(n)
+        i = int(k * 0.12 * RATE)
+        end = int((k + 1) * 0.12 * RATE) if k < len(names) - 1 else len(mix)
+        seg = x[: max(0, min(len(x), end - i))]
+        mix[i:i + len(seg)] += seg
+    peak = np.abs(mix).max()
+    with wave.open(out, "wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE)
+        w.writeframes(b"".join(struct.pack("<h", int(round(max(-1, min(1, v)) * 32767))) for v in mix))
+    print(f"RAPID5 {out}: peak {20 * math.log10(peak):.1f} dBFS")
+
+
 def main(out):
     rnd = random.Random(3)
     total = 30.0
@@ -50,7 +67,7 @@ def main(out):
         # human: select, maybe a must-jump bump first, then slide or jump
         if turn % 5 == 3:
             put("bump", t); t += 0.5
-        put("select", t); t += 0.45
+        t += 0.45  # selecting is silent (D51)
         jumps = 1 + (turn % 4 == 2) if turn % 2 == 1 else 0
         if jumps:
             for k in range(jumps):
@@ -79,4 +96,6 @@ def main(out):
     print(f"LOUDNESS {out}: {total:.0f} s, peak {20 * math.log10(peak):.1f} dBFS, RMS {20 * math.log10(rms):.1f} dBFS, clipped samples {clipped}, turns {turn}")
 
 
+if "--rapid" in sys.argv:
+    rapid(sys.argv[sys.argv.index("--rapid") + 1])
 main(sys.argv[1])

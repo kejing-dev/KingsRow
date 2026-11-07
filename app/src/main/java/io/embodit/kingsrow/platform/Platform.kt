@@ -30,6 +30,7 @@ class SpatialApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        io.embodit.kingsrow.ui.board.input.BoardInputLog.attach(this)
         graph = Graph(this)
         launch(::mainApp)
     }
@@ -70,8 +71,8 @@ class Graph(context: Context) {
 
 /**
  * Short effects from assets/sounds/<name>.wav (+ _2 / _3 variants) through a SoundPool (design sound.spatial allows
- * the SoundPool fallback). Repeated sounds (slide, jump, tray) rotate their variants with a random rate of
- * 0.93-1.07 that never repeats back to back (design sound.variation).
+ * the SoundPool fallback). Physical sounds are CC0 recordings (tools/import_sounds.py); selecting a piece is silent
+ * (no select.wav). Repeated sounds rotate variants with ±5 % pitch; one instance per event at a time (D51).
  */
 class SoundPlayer(context: Context) {
     @Volatile var enabled = true
@@ -86,6 +87,7 @@ class SoundPlayer(context: Context) {
     private var lastRate = 1f
     private val lastVariant = HashMap<Sound, Int>()
     private val varied = setOf(Sound.SLIDE, Sound.JUMP, Sound.TRAY)
+    private val lastStream = HashMap<Sound, Int>()
 
     init {
         pool.setOnLoadCompleteListener { _, id, status -> if (status == 0) synchronized(loaded) { loaded += id } }
@@ -95,7 +97,7 @@ class SoundPlayer(context: Context) {
             for (name in listOf("$base.wav", "${base}_2.wav", "${base}_3.wav")) {
                 runCatching { context.assets.openFd("sounds/$name").use { fd -> found += pool.load(fd, 1) } }
             }
-            if (found.isNotEmpty()) ids[s] = found else Log.w(TAG, "no sound for $s")
+            if (found.isNotEmpty()) ids[s] = found else Log.i(TAG, "SOUND $s silent (no file)")
         }
     }
 
@@ -106,7 +108,7 @@ class SoundPlayer(context: Context) {
         var rate = 1f
         var v = 0
         if (s in varied) {
-            rate = 0.93f + random.nextFloat() * 0.14f
+            rate = 0.95f + random.nextFloat() * 0.10f // ±5 % (D51)
             if (abs(rate - lastRate) < 0.015f) rate = if (rate < 1f) rate + 0.03f else rate - 0.03f
             lastRate = rate
             v = random.nextInt(variants.size)
@@ -115,7 +117,9 @@ class SoundPlayer(context: Context) {
         }
         val id = variants[v]
         if (synchronized(loaded) { id !in loaded }) return
-        pool.play(id, vol, vol, 1, 0, rate)
+        // D51: the same event never stacks — stop the one still ringing before the next starts (5 quick taps stay <= -1 dBFS)
+        lastStream[s]?.let { pool.stop(it) }
+        lastStream[s] = pool.play(id, vol, vol, 1, 0, rate)
     }
 
     fun release() = pool.release()

@@ -86,11 +86,12 @@ class WindowCtl {
      * Settings [重开控制窗]: close, wait for ON_DESTROY, open again beside the board (Placement.right, D44 corrected;
      * the copy only says "next to the board"). No level gate wait: Shared Space gives no head pose.
      */
-    fun recall(reopenBoard: () -> Unit = {}) {
+    fun recall() {
         if (WindowPolicy.reopenAction(boardAlive) == WindowPolicy.Reopen.BOARD_FIRST) {
-            // the board volume was closed: the panel has nothing to sit beside, so bring the board back instead
-            Log.i(TAG, "WINDOW recall: board closed -> reopen board")
-            boardNotice = if (runCatching(reopenBoard).onFailure { Log.w(TAG, "WINDOW reopen board failed: $it") }.isSuccess) 1 else 2
+            // the board volume is gone: the panel has nothing to sit beside, so it does not open (no crash); say how to
+            // get it back. (On PICO OS 6.2 the system closes the panel together with the board, so this is a safety net.)
+            Log.i(TAG, "WINDOW recall: board closed -> not reopening, tell the user to relaunch")
+            boardNotice = 2
             return
         }
         if (panelState == "never" || panelState == "ON_DESTROY") openNow("recall", null)

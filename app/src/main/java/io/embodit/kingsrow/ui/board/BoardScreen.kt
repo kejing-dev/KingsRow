@@ -23,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -49,9 +48,6 @@ import com.pico.spatial.ui.design.Text
 import com.pico.spatial.ui.foundation.content.SpatialView
 import com.pico.spatial.ui.foundation.dsl.registerSystem
 import com.pico.spatial.ui.foundation.dsl.unregisterSystem
-import com.pico.spatial.ui.foundation.gesture.TargetEntity
-import com.pico.spatial.ui.foundation.gesture.detectSpatialDragGesture
-import com.pico.spatial.ui.foundation.gesture.detectSpatialTapGesture
 import com.pico.spatial.ui.platform.LengthUnit
 import com.pico.spatial.ui.platform.LocalPhysicalLengthConverter
 import com.pico.spatial.ui.platform.containers.LocalSpatialNavigator
@@ -66,6 +62,11 @@ import io.embodit.kingsrow.platform.TAG
 import io.embodit.kingsrow.ui.Containers
 import io.embodit.kingsrow.ui.theme.KingsColors
 import io.embodit.kingsrow.ui.theme.KingsTheme
+import io.embodit.kingsrow.ui.board.input.BoardInputListener
+import io.embodit.kingsrow.ui.board.input.InputSource
+import io.embodit.kingsrow.ui.board.input.Offset3M
+import io.embodit.kingsrow.ui.board.input.boardInput
+import com.pico.spatial.ui.geometry.Offset3D
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -103,7 +104,6 @@ fun BoardScreen() {
     val converter = LocalPhysicalLengthConverter.current
     val scene = remember { BoardScene() }
     var viewSize by remember { mutableStateOf(IntSize.Zero) }
-    fun pxToM(px: Float): Float = with(converter) { converter.dpToLength(px.toDp(), LengthUnit.Meters) }
 
     // Background / foreground (design container.lifecycle): stop the AI search and settle the move in flight when
     // the board volume stops; restart the AI turn when it comes back. Every move is on disk already.
@@ -148,30 +148,11 @@ fun BoardScreen() {
         modifier = Modifier
             .fillMaxSize()
             .onSizeChanged { viewSize = it }
-            .pointerInput(Unit) {
-                detectSpatialTapGesture(context, TargetEntity.any()) { tap ->
-                    val name = tap.targetEntity?.getName()
-                    Log.i(TAG, "TAP target=$name kind=${tap.interactionKind}")
-                    // S10: with the control window closed, a pinch on the board / a piece / a tray reopens it beside the board;
-                    // the same pinch still counts on the board (critic suggestion 3)
-                    if (graph.window.closed) graph.window.reopen("pinch")
-                    val sq = scene.squareOf(name)
-                    if (sq != null) graph.flow.tap(sq) else graph.flow.tapNothing()
-                }
-            }
-            .pointerInput(Unit) {
-                detectSpatialDragGesture(
-                    context = context,
-                    targetedToEntity = TargetEntity.any(),
-                    onDragStart = { _, v ->
-                        val sq = scene.squareOf(v.targetEntity?.getName())
-                        Log.i(TAG, "DRAG start target=${v.targetEntity?.getName()}")
-                        if (sq != null && graph.flow.dragStart(sq)) scene.beginDrag(sq)
-                    },
-                    onDragEnd = { val to = scene.endDrag(); graph.flow.dragEnd(to) },
-                    onDragCancel = { scene.endDrag(); graph.flow.dragEnd(null) },
-                ) { v -> scene.dragBy(pxToM(v.dragAmount.x), -pxToM(v.dragAmount.y), pxToM(v.dragAmount.z)) }
-            },
+            // Factory board-input template (profile D50): one input layer for controller ray, hand ray and eye-hand;
+            // short "drags" become taps, hits resolve up the parent chain (GLB-free here, but the piece meshes hang
+            // below their `pc:<sq>` hit root). The same listener is the only entry for real input; debug taps call the
+            // same GameFlow.tap.
+            .boardInput(BoardTargets, remember(scene, graph) { BoardListener(scene, graph) }),
         attachments = {
             AttachmentPanel(SEAT) { KingsTheme { SeatCard(state, graph, converter.lengthToDp(Layout.SEAT_W, LengthUnit.Meters), converter.lengthToDp(Layout.SEAT_H, LengthUnit.Meters)) } }
             AttachmentPanel(CARD_BLACK) { KingsTheme { TrayCard(state, Side.BLACK, converter.lengthToDp(Layout.TRAY_CARD_W, LengthUnit.Meters), converter.lengthToDp(Layout.TRAY_CARD_H, LengthUnit.Meters)) } }
@@ -284,3 +265,32 @@ private fun CardText(text: String, tag: String, size: TextUnit, lines: Int = 1) 
     )
 }
 
+
+/**
+ * Real input → GameFlow (board-input template listener). Every source (controller ray, hand ray, eye-hand) lands here.
+ * A pinch with the control window closed (S10) also reopens it beside the board, and still counts on the board.
+ */
+internal class BoardListener(private val scene: BoardScene, private val graph: Graph) : BoardInputListener<BoardTarget> {
+    override fun onTap(target: BoardTarget?, source: InputSource, position: Offset3D?) {
+        if (graph.window.closed) graph.window.reopen("pinch")
+        val sq = BoardTargets.squareOf(target)
+        Log.i(TAG, "INPUT tap src=${source.label} target=$target square=${sq?.let { io.embodit.kingsrow.domain.Sq.name(it) } ?: "-"}")
+        if (sq != null) graph.flow.tap(sq) else graph.flow.tapNothing()
+    }
+
+    override fun onDragStart(target: BoardTarget, source: InputSource): Boolean {
+        val sq = BoardTargets.squareOf(target) ?: return false
+        if (!graph.flow.dragStart(sq)) return false
+        scene.beginDrag(sq)
+        return true
+    }
+
+    override fun onDragMove(totalM: Offset3M) = scene.dragTo(totalM.x, totalM.y, totalM.z)
+
+    override fun onDragEnd() { graph.flow.dragEnd(scene.endDrag()) }
+
+    override fun onDragCancel() { scene.endDrag(); graph.flow.dragEnd(null) }
+
+    /** Supplement to the system HoverEffect (the app rarely gets hover events in Shared Space): a thin ring, hint only. */
+    override fun onHover(target: BoardTarget?, source: InputSource) = scene.hover(BoardTargets.squareOf(target))
+}
