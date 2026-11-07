@@ -15,5 +15,5 @@
 | `e1223a34` | 子代理 · btw: PICO CLI unity 要装什么版本的 | 311 |
 | `e1223a34` | 子代理 · btw: PICO CLI unity 要装什么版本的 | 724 |
 | `e1223a34` | 子代理 · btw: PICO CLI unity 要装什么版本的 | 1107 |
-| `f3376a48` | 子代理 · Spatial app factory setup | 573 |
 | `f3376a48` | 子代理 · Spatial app factory setup | 2623 |
+| `f3376a48` | 子代理 · Spatial app factory setup | 802 |
